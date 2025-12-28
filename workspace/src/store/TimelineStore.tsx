@@ -6,7 +6,7 @@
  */
 
 import { createContext, useContext, useReducer, ReactNode, useCallback, useRef, useEffect } from 'react';
-import { TimelineData, TimelineClip, createEmptyTimeline, generateId } from '../types';
+import { TimelineData, TimelineClip, TimelineTransition, TransitionType, createEmptyTimeline, generateId } from '../types';
 
 // ============================================================
 // STATE INTERFACE
@@ -55,7 +55,13 @@ type TimelineAction =
     | { type: 'SPLIT_CLIP'; payload: { clipId: string; splitTime: number } }
     | { type: 'TRIM_CLIP_IN'; payload: { clipId: string; newInPoint: number } }
     | { type: 'TRIM_CLIP_OUT'; payload: { clipId: string; newOutPoint: number } }
-    | { type: 'SPLIT_CLIP_AT_PLAYHEAD'; payload: string };
+    | { type: 'SPLIT_CLIP_AT_PLAYHEAD'; payload: string }
+    // Transition actions
+    | { type: 'ADD_TRANSITION'; payload: { fromClipId: string; toClipId: string; type: TransitionType; duration: number } }
+    | { type: 'UPDATE_TRANSITION'; payload: { id: string; updates: Partial<TimelineTransition> } }
+    | { type: 'REMOVE_TRANSITION'; payload: string }
+    // Speed actions
+    | { type: 'SET_CLIP_SPEED'; payload: { clipId: string; speed: number } };
 
 // ============================================================
 // REDUCER
@@ -327,6 +333,88 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
                     ...state.timeline,
                     clips: updatedClips,
                     duration: maxEnd,
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        // ============================================================
+        // TRANSITION ACTIONS
+        // ============================================================
+
+        case 'ADD_TRANSITION': {
+            const { fromClipId, toClipId, type, duration } = action.payload;
+
+            // Check if transition already exists between these clips
+            const exists = state.timeline.transitions.some(
+                t => t.fromClipId === fromClipId && t.toClipId === toClipId
+            );
+
+            if (exists) return state;
+
+            const newTransition: TimelineTransition = {
+                id: generateId('trans'),
+                fromClipId,
+                toClipId,
+                type,
+                duration,
+            };
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    transitions: [...state.timeline.transitions, newTransition],
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        case 'UPDATE_TRANSITION': {
+            const { id, updates } = action.payload;
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    transitions: state.timeline.transitions.map(t =>
+                        t.id === id ? { ...t, ...updates } : t
+                    ),
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        case 'REMOVE_TRANSITION': {
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    transitions: state.timeline.transitions.filter(t => t.id !== action.payload),
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        // ============================================================
+        // SPEED ACTIONS
+        // ============================================================
+
+        case 'SET_CLIP_SPEED': {
+            const { clipId, speed } = action.payload;
+
+            // Clamp speed between 0.25x and 4x
+            const clampedSpeed = Math.max(0.25, Math.min(4, speed));
+
+            const updatedClips = state.timeline.clips.map(c =>
+                c.id === clipId ? { ...c, speed: clampedSpeed } : c
+            );
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    clips: updatedClips,
                     updatedAt: new Date().toISOString(),
                 },
             };

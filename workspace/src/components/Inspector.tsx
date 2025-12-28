@@ -156,6 +156,52 @@ export function Inspector({ selectedClip, onUpdate }: InspectorProps) {
                                 ))}
                             </div>
                         </section>
+
+                        {/* Transitions */}
+                        <section className="inspector-section">
+                            <h3 className="section-title">Transitions</h3>
+                            <div className="transition-controls">
+                                <div className="transition-row">
+                                    <label>In:</label>
+                                    <select
+                                        className="transition-select"
+                                        defaultValue="cut"
+                                    >
+                                        <option value="cut">Cut (None)</option>
+                                        <option value="cross-dissolve">Cross Dissolve</option>
+                                        <option value="fade-in">Fade In</option>
+                                    </select>
+                                </div>
+                                <div className="transition-row">
+                                    <label>Out:</label>
+                                    <select
+                                        className="transition-select"
+                                        defaultValue="cut"
+                                    >
+                                        <option value="cut">Cut (None)</option>
+                                        <option value="cross-dissolve">Cross Dissolve</option>
+                                        <option value="fade-out">Fade Out</option>
+                                    </select>
+                                </div>
+                                <div className="transition-row">
+                                    <label>Duration:</label>
+                                    <div className="duration-input-group">
+                                        <input
+                                            type="number"
+                                            className="duration-input"
+                                            defaultValue="0.5"
+                                            min="0.1"
+                                            max="3"
+                                            step="0.1"
+                                        />
+                                        <span className="duration-unit">sec</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="transition-hint">
+                                Transitions render via Remotion on preview
+                            </p>
+                        </section>
                     </div>
                 ) : (
                     <div className="inspector-empty">

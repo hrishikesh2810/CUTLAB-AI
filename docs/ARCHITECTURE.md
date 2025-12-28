@@ -388,4 +388,60 @@ mediaState.items.forEach(item => {
 const videoUrl = mediaMap.get(clip.sourceVideoId);
 ```
 
+---
+
+## Transitions & Effects Pipeline
+
+Transitions are applied using Remotion's `interpolate` function for frame-accurate animation.
+
+### Transition Rendering Flow
+
+```
+For each clip in timeline:
+  1. Check for transition IN (from previous clip)
+  2. Check for transition OUT (to next clip)
+  3. Calculate opacity using interpolate():
+     
+     Fade In:
+     opacity = interpolate(frame, [0, transitionFrames], [0, 1])
+     
+     Fade Out:
+     opacity = interpolate(frame, [outStart, clipEnd], [1, 0])
+  
+  4. Apply opacity to <AbsoluteFill style={{ opacity }}>
+```
+
+### Speed Control Pipeline
+
+```
+Clip.speed → playbackRate prop → Remotion Video component
+
+┌────────────────────────────────────────────┐
+│  <Video                                    │
+│    src={videoUrl}                          │
+│    startFrom={inPoint * fps}               │
+│    playbackRate={clip.speed}  ◀────────────│── SET_CLIP_SPEED action
+│  />                                        │
+└────────────────────────────────────────────┘
+```
+
+### Transition Types
+
+| Type | Implementation |
+|------|----------------|
+| `cut` | No opacity change |
+| `cross-dissolve` | Overlapping opacity fade (out + in) |
+| `fade-in` | Opacity: 0 → 1 over duration |
+| `fade-out` | Opacity: 1 → 0 over duration |
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/remotion/Transitions.tsx` | TransitionWrapper, Fade components |
+| `src/remotion/TimelineComposition.tsx` | Applies transitions to clips |
+| `src/store/TimelineStore.tsx` | ADD_TRANSITION, SET_CLIP_SPEED actions |
+| `src/components/Inspector.tsx` | Transition/Speed UI controls |
+
+
 

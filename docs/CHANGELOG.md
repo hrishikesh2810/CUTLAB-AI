@@ -45,6 +45,36 @@ All notable changes to the CUTLAB AI project are documented here.
 
 ---
 
+## Transitions & Speed Control
+
+### Added
+- Cross-dissolve transition via Remotion interpolate API
+- Fade-in and fade-out transition types
+- Speed adjustment via playbackRate (0.25x - 4x)
+- Speed indicator overlay in preview when speed ≠ 1
+- Transition controls in Inspector panel:
+  - In/Out transition type dropdowns
+  - Duration input (seconds)
+- Speed presets: 0.5x, 1x, 1.5x, 2x buttons
+- Speed slider with fine control
+
+### Technical
+- Transitions.tsx: TransitionWrapper, Fade components
+- TimelineComposition applies opacity interpolation for transitions
+- SET_CLIP_SPEED action with 0.25-4x clamping
+- ADD_TRANSITION, UPDATE_TRANSITION, REMOVE_TRANSITION actions
+- Remotion Video component uses playbackRate prop
+
+### Transition Types Supported
+| Type | Effect |
+|------|--------|
+| cut | Hard cut (no transition) |
+| cross-dissolve | Opacity blend between clips |
+| fade-in | Fade from black |
+| fade-out | Fade to black |
+
+---
+
 ## Editing – Split & Trim
 
 ### Added
