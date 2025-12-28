@@ -164,9 +164,9 @@ Both components use the same JSON structure:
 | AI Dashboard | Streamlit |
 | Workspace Shell | Electron |
 | Workspace UI | React + TypeScript |
-| Timeline Render | HTML5 Canvas / CSS |
+| Timeline Render | CSS + React |
 | Data Storage | SQLite, JSON files |
-| Preview Render | MoviePy, FFmpeg |
+| Preview Render | **Remotion** (@remotion/player) |
 
 ---
 
@@ -268,4 +268,80 @@ Timeline      Preview       Inspector
 (playhead     (video        (clip props)
  position)    sync)
 ```
+
+---
+
+## Workspace Rendering Engine
+
+The workspace uses **Remotion** for timeline-driven video preview rendering.
+
+### Why Remotion?
+- Frame-accurate video composition
+- React-based declarative API
+- No manual frame syncing required
+- Supports speed changes, sequences, transitions
+- In-browser playback via @remotion/player
+
+### Rendering Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TimelineStore                             │
+│  (timeline.json is source of truth)                          │
+├─────────────────────────────────────────────────────────────┤
+│  timeline.clips[] ──────────────────────────────────────────┼───┐
+│  playhead ─────────────────────────────────────────────────┼───┤
+│  isPlaying ────────────────────────────────────────────────┼───┤
+└─────────────────────────────────────────────────────────────┘   │
+                                                                  │
+                                 ┌────────────────────────────────┘
+                                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  RemotionPreview Component                   │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │               @remotion/player                          │ │
+│  │                                                          │ │
+│  │   ┌─────────────────────────────────────────────────┐   │ │
+│  │   │         TimelineComposition                      │   │ │
+│  │   │                                                   │   │ │
+│  │   │   Sequence(clip1) ──▶ Video(src, startFrom)     │   │ │
+│  │   │   Sequence(clip2) ──▶ Video(src, playbackRate)  │   │ │
+│  │   │   Sequence(clip3) ──▶ ...                       │   │ │
+│  │   │                                                   │   │ │
+│  │   └─────────────────────────────────────────────────┘   │ │
+│  │                                                          │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| TimelineComposition | `src/remotion/TimelineComposition.tsx` | Maps clips to Remotion Sequences |
+| RemotionPreview | `src/components/RemotionPreview.tsx` | Player wrapper with transport controls |
+| MediaStore | `src/store/MediaStore.tsx` | Manages imported video files |
+
+### Data Flow
+
+1. **User imports video** → MediaStore.items updated
+2. **User adds clip** → TimelineStore.clips updated
+3. **Remotion Player renders** → TimelineComposition receives props
+4. **Each clip** → Mapped to `<Sequence>` with `<Video>` child
+5. **Playback syncs** → Player frame ↔ TimelineStore.playhead
+
+### Video URL Mapping
+
+```typescript
+// MediaStore provides URL lookup
+const mediaMap = new Map<string, string>();
+mediaState.items.forEach(item => {
+  map.set(item.id, item.path);  // sourceVideoId → video URL
+});
+
+// TimelineComposition uses mediaMap
+const videoUrl = mediaMap.get(clip.sourceVideoId);
+```
+
 

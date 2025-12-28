@@ -1,12 +1,52 @@
-import { useTimeline, formatTimecode, formatTime } from '../store';
+import { useTimeline, useMedia, formatTimecode, formatTime, getClipAtTime } from '../store';
+import { useEffect, useState, useMemo } from 'react';
 import './PreviewPlayer.css';
 
 export function PreviewPlayer() {
     const { state, videoRef, play, pause, seekTo, dispatch } = useTimeline();
-    const { playhead, isPlaying, timeline } = state;
+    const { state: mediaState, getItemById } = useMedia();
+    const { playhead, isPlaying, timeline, selectedClipId } = state;
 
-    const duration = timeline.duration || 30; // Default 30s for empty timeline
+    const [videoLoaded, setVideoLoaded] = useState(false);
+    const [videoError, setVideoError] = useState(false);
+
+    const duration = timeline.duration || 0;
     const progress = duration > 0 ? (playhead / duration) * 100 : 0;
+
+    // Get current clip at playhead position
+    const currentClip = getClipAtTime(timeline.clips, playhead);
+
+    // Get the media item for the current clip
+    const currentMedia = useMemo(() => {
+        if (!currentClip) return null;
+        return getItemById(currentClip.sourceVideoId);
+    }, [currentClip, getItemById]);
+
+    // Get video source URL
+    const videoSrc = currentMedia?.path || '';
+
+    // Load video when clip changes
+    useEffect(() => {
+        if (videoRef.current && videoSrc) {
+            const video = videoRef.current;
+
+            // Only reload if source changed
+            if (video.src !== videoSrc) {
+                setVideoLoaded(false);
+                setVideoError(false);
+                video.src = videoSrc;
+                video.load();
+            }
+
+            // Seek to correct position within clip
+            if (currentClip) {
+                const clipTime = playhead - currentClip.inPoint;
+                if (Math.abs(video.currentTime - clipTime) > 0.1) {
+                    video.currentTime = Math.max(0, clipTime);
+                }
+            }
+        }
+    }, [videoSrc, currentClip, playhead, videoRef]);
 
     // Handle scrubber change
     const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,6 +83,16 @@ export function PreviewPlayer() {
         }
     };
 
+    const handleVideoLoad = () => {
+        setVideoLoaded(true);
+        setVideoError(false);
+    };
+
+    const handleVideoError = () => {
+        setVideoError(true);
+        setVideoLoaded(false);
+    };
+
     return (
         <div className="preview-player" tabIndex={0} onKeyDown={handleKeyDown}>
             <div className="panel-header">
@@ -53,24 +103,62 @@ export function PreviewPlayer() {
             <div className="preview-viewport">
                 {/* Video display area */}
                 <div className="preview-screen">
-                    {/* Hidden video element for future video loading */}
+                    {/* Actual video element */}
                     <video
                         ref={videoRef}
-                        className="preview-video"
-                        style={{ display: 'none' }}
+                        className={`preview-video ${videoLoaded && currentClip ? 'visible' : ''}`}
+                        onLoadedData={handleVideoLoad}
+                        onError={handleVideoError}
+                        playsInline
                     />
 
-                    {/* Placeholder when no video */}
-                    <div className="preview-placeholder">
-                        <span className="preview-icon">{isPlaying ? '⏸' : '▶'}</span>
-                        <span className="preview-text">
-                            {timeline.clips.length > 0
-                                ? 'Preview rendering not yet implemented'
-                                : 'No clips on timeline'
-                            }
-                        </span>
-                        <span className="preview-time">{formatTime(playhead)}</span>
-                    </div>
+                    {/* Overlay when no clips or video not loaded */}
+                    {(!currentClip || !videoLoaded) && (
+                        <div className="preview-placeholder">
+                            {timeline.clips.length === 0 ? (
+                                <>
+                                    <span className="preview-icon">📽️</span>
+                                    <span className="preview-text">No clips on timeline</span>
+                                    <span className="preview-hint">Import videos and double-click to add</span>
+                                </>
+                            ) : !currentClip ? (
+                                <>
+                                    <span className="preview-icon">⏸</span>
+                                    <span className="preview-text">No clip at current position</span>
+                                    <span className="preview-hint">Move playhead to a clip</span>
+                                </>
+                            ) : videoError ? (
+                                <>
+                                    <span className="preview-icon">⚠️</span>
+                                    <span className="preview-text">Video file not found</span>
+                                    <span className="preview-hint">{currentMedia?.filename || 'Unknown'}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="preview-icon loading">⏳</span>
+                                    <span className="preview-text">Loading video...</span>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Current clip indicator */}
+                    {currentClip && (
+                        <div className="current-clip-indicator">
+                            <span className="clip-label">▶ {currentClip.label}</span>
+                            <span className="clip-time">
+                                {formatTime(playhead - currentClip.inPoint)} / {formatTime(currentClip.outPoint - currentClip.inPoint)}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Playing indicator */}
+                    {isPlaying && (
+                        <div className="playing-indicator">
+                            <span className="playing-dot"></span>
+                            PLAYING
+                        </div>
+                    )}
                 </div>
 
                 {/* Transport controls */}
@@ -132,11 +220,12 @@ export function PreviewPlayer() {
                             <input
                                 type="range"
                                 min="0"
-                                max={duration}
+                                max={duration || 1}
                                 step="0.001"
                                 value={playhead}
                                 onChange={handleScrub}
                                 className="progress-input"
+                                disabled={duration === 0}
                             />
                         </div>
                     </div>

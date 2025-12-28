@@ -2,13 +2,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose protected methods to the renderer process
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Timeline operations
-    loadTimeline: (projectId) => ipcRenderer.invoke('load-timeline', projectId),
-    saveTimeline: (projectId, data) => ipcRenderer.invoke('save-timeline', projectId, data),
-
     // File operations
-    selectVideoFile: () => ipcRenderer.invoke('select-video-file'),
+    selectVideoFiles: () => ipcRenderer.invoke('select-video-files'),
+    getVideoInfo: (filePath) => ipcRenderer.invoke('get-video-info', filePath),
+    fileExists: (filePath) => ipcRenderer.invoke('file-exists', filePath),
 
     // Platform info
     platform: process.platform,
+    isElectron: true,
 });

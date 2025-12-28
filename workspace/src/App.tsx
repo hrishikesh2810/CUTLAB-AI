@@ -1,12 +1,14 @@
-import { TimelineProvider } from './store';
+import { TimelineProvider, MediaProvider } from './store';
 import { WorkspaceLayout } from './components/WorkspaceLayout';
 import './styles/global.css';
 
 function App() {
     return (
-        <TimelineProvider>
-            <WorkspaceLayout />
-        </TimelineProvider>
+        <MediaProvider>
+            <TimelineProvider>
+                <WorkspaceLayout />
+            </TimelineProvider>
+        </MediaProvider>
     );
 }
 

@@ -1,10 +1,20 @@
 /// <reference types="vite/client" />
 
+interface VideoFileInfo {
+    path: string;
+    name: string;
+    size: number;
+    url: string;
+    exists?: boolean;
+    error?: string;
+}
+
 interface ElectronAPI {
-    loadTimeline: (projectId: string) => Promise<TimelineData>;
-    saveTimeline: (projectId: string, data: TimelineData) => Promise<boolean>;
-    selectVideoFile: () => Promise<string | null>;
+    selectVideoFiles: () => Promise<VideoFileInfo[]>;
+    getVideoInfo: (filePath: string) => Promise<VideoFileInfo>;
+    fileExists: (filePath: string) => Promise<boolean>;
     platform: string;
+    isElectron: boolean;
 }
 
 declare global {

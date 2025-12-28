@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 
@@ -15,6 +16,8 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
+            // Enable loading local files
+            webSecurity: false,
         },
     });
 
@@ -32,6 +35,65 @@ function createWindow() {
         mainWindow = null;
     });
 }
+
+// ============================================================
+// IPC HANDLERS
+// ============================================================
+
+// Handle video file selection
+ipcMain.handle('select-video-files', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        title: 'Import Video Files',
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+            { name: 'Video Files', extensions: ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v'] },
+            { name: 'All Files', extensions: ['*'] }
+        ]
+    });
+
+    if (result.canceled) {
+        return [];
+    }
+
+    // Return file info for each selected file
+    const files = result.filePaths.map(filePath => {
+        const stats = fs.statSync(filePath);
+        return {
+            path: filePath,
+            name: path.basename(filePath),
+            size: stats.size,
+            // Convert to file:// URL for video element
+            url: `file://${filePath}`,
+        };
+    });
+
+    return files;
+});
+
+// Get video metadata using ffprobe (if available) or basic file info
+ipcMain.handle('get-video-info', async (event, filePath) => {
+    try {
+        const stats = fs.statSync(filePath);
+        return {
+            path: filePath,
+            name: path.basename(filePath),
+            size: stats.size,
+            url: `file://${filePath}`,
+            exists: true,
+        };
+    } catch (error) {
+        return {
+            path: filePath,
+            exists: false,
+            error: error.message,
+        };
+    }
+});
+
+// Check if file exists
+ipcMain.handle('file-exists', async (event, filePath) => {
+    return fs.existsSync(filePath);
+});
 
 app.whenReady().then(createWindow);
 

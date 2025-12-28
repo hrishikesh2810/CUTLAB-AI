@@ -25,6 +25,26 @@ All notable changes to the CUTLAB AI project are documented here.
 
 ---
 
+## Workspace – Remotion Integration
+
+### Added
+- Remotion rendering engine for timeline preview
+- `@remotion/player` for in-browser video composition
+- TimelineComposition component renders clips as Sequences
+- RemotionPreview replaces HTML5 video element
+- Frame-accurate playback and seeking
+- Media import with browser file picker
+- MediaStore for managing imported video files
+- Purple "REMOTION" badge in header
+
+### Technical
+- Remotion Player syncs with TimelineStore playhead
+- Video clips rendered via Remotion Sequence API
+- MediaMap links sourceVideoId to video URLs
+- Supports playback rate (speed) changes per clip
+
+---
+
 ## Timeline Core
 
 ### Added

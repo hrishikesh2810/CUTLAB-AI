@@ -1,11 +1,12 @@
-.preview-player {
+.remotion-preview {
     height: 100%;
     display: flex;
     flex-direction: column;
     outline: none;
+    position: relative;
 }
 
-.preview-player:focus {
+.remotion-preview:focus {
     outline: none;
 }
 
@@ -14,9 +15,10 @@
     display: flex;
     flex-direction: column;
     background: #000;
+    overflow: hidden;
 }
 
-.preview-screen {
+.remotion-container {
     flex: 1;
     display: flex;
     align-items: center;
@@ -24,20 +26,6 @@
     background: linear-gradient(180deg, #0a0a0f 0%, #1a1a25 100%);
     position: relative;
     overflow: hidden;
-}
-
-/* Video element */
-.preview-video {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    display: none;
-}
-
-.preview-video.visible {
-    display: block;
 }
 
 /* Placeholder */
@@ -48,32 +36,13 @@
     justify-content: center;
     gap: 12px;
     color: var(--text-muted);
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, #0a0a0f 0%, #1a1a25 100%);
+    width: 100%;
+    height: 100%;
 }
 
 .preview-icon {
     font-size: 48px;
     opacity: 0.5;
-}
-
-.preview-icon.loading {
-    animation: pulse 1s ease-in-out infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 0.3;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.6;
-        transform: scale(1.1);
-    }
 }
 
 .preview-text {
@@ -86,36 +55,20 @@
     color: var(--text-muted);
 }
 
-/* Current clip indicator */
-.current-clip-indicator {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 6px;
-    backdrop-filter: blur(8px);
-}
-
-.current-clip-indicator .clip-label {
-    font-size: 12px;
-    font-weight: 600;
+/* Timecode */
+.timecode {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: var(--font-size-xs);
     color: var(--accent-primary);
-}
-
-.current-clip-indicator .clip-time {
-    font-size: 10px;
-    font-family: monospace;
-    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
 /* Playing indicator */
 .playing-indicator {
     position: absolute;
-    top: 12px;
+    top: 48px;
     right: 12px;
     display: flex;
     align-items: center;
@@ -128,6 +81,7 @@
     color: white;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    z-index: 10;
 }
 
 .playing-dot {
@@ -148,15 +102,6 @@
     50% {
         opacity: 0.3;
     }
-}
-
-.timecode {
-    font-family: 'SF Mono', 'Monaco', monospace;
-    font-size: var(--font-size-xs);
-    color: var(--accent-primary);
-    background: var(--bg-tertiary);
-    padding: 2px 8px;
-    border-radius: 4px;
 }
 
 /* Transport Controls */
@@ -198,11 +143,6 @@
 .control-btn:hover {
     background: var(--bg-hover);
     border-color: var(--border-active);
-}
-
-.control-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 .control-main {
