@@ -1,0 +1,137 @@
+.preview-player {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+}
+
+.preview-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #0a0a0f 0%, #1a1a25 100%);
+    position: relative;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+}
+
+.preview-icon {
+    font-size: 48px;
+    opacity: 0.3;
+}
+
+.preview-text {
+    font-size: var(--font-size-sm);
+}
+
+.timecode {
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: var(--font-size-xs);
+    color: var(--accent-primary);
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Transport Controls */
+.preview-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.control-left,
+.control-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-center {
+    flex: 1;
+}
+
+.control-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-active);
+}
+
+.control-main {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+    background: var(--accent-gradient);
+    border: none;
+}
+
+.control-main:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+/* Progress Bar */
+.progress-bar {
+    position: relative;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--accent-gradient);
+    border-radius: 3px;
+    transition: width 0.1s;
+}
+
+.progress-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.duration-display {
+    font-family: monospace;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}

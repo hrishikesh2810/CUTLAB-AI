@@ -1,0 +1,28 @@
+{
+  "project_id": "2d676c55-3a12-4d37-9476-feb219766257",
+  "created_at": "2025-12-28T06:05:59.344656",
+  "updated_at": "2025-12-28T06:05:59.344765",
+  "clips": [
+    {
+      "clip_id": "clip_1_1766882159",
+      "source_video": "2d676c55-3a12-4d37-9476-feb219766257",
+      "source_filename": "edit1.MOV",
+      "start_seconds": 0.0,
+      "end_seconds": 5.0,
+      "speed": 1.0,
+      "label": "New Clip",
+      "position": 0,
+      "added_at": "2025-12-28T06:05:59.344736",
+      "start_formatted": "00:00:00.000",
+      "end_formatted": "00:00:05.000",
+      "duration_seconds": 5.0,
+      "duration_formatted": "00:00:05.000"
+    }
+  ],
+  "duration": 5.0,
+  "settings": {
+    "fps": 30.0,
+    "width": 1920,
+    "height": 1080
+  }
+}

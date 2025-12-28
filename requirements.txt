@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+opencv-python
+moviepy<2.0.0
+streamlit
+requests
+SQLAlchemy
+scenedetect
+librosa
