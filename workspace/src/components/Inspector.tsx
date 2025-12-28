@@ -1,4 +1,5 @@
 import { TimelineClip } from '../types';
+import { useTimeline, formatTime } from '../store';
 import './Inspector.css';
 
 interface InspectorProps {
@@ -7,11 +8,43 @@ interface InspectorProps {
 }
 
 export function Inspector({ selectedClip, onUpdate }: InspectorProps) {
-    const formatTime = (seconds: number): string => {
+    const {
+        state,
+        splitClipAtPlayhead,
+        trimClipIn,
+        trimClipOut
+    } = useTimeline();
+
+    const { playhead } = state;
+
+    const formatTimeDisplay = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         const ms = Math.floor((seconds % 1) * 1000);
         return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+    };
+
+    // Check if playhead is within the selected clip (enables split button)
+    const canSplit = selectedClip
+        ? playhead > selectedClip.inPoint && playhead < selectedClip.outPoint
+        : false;
+
+    const handleSplit = () => {
+        if (selectedClip && canSplit) {
+            splitClipAtPlayhead(selectedClip.id);
+        }
+    };
+
+    const handleTrimIn = () => {
+        if (selectedClip && playhead < selectedClip.outPoint && playhead >= 0) {
+            trimClipIn(selectedClip.id, playhead);
+        }
+    };
+
+    const handleTrimOut = () => {
+        if (selectedClip && playhead > selectedClip.inPoint) {
+            trimClipOut(selectedClip.id, playhead);
+        }
     };
 
     return (
@@ -47,21 +80,52 @@ export function Inspector({ selectedClip, onUpdate }: InspectorProps) {
                                 <div className="property-item">
                                     <label>In</label>
                                     <span className="property-value mono">
-                                        {formatTime(selectedClip.inPoint)}
+                                        {formatTimeDisplay(selectedClip.inPoint)}
                                     </span>
                                 </div>
                                 <div className="property-item">
                                     <label>Out</label>
                                     <span className="property-value mono">
-                                        {formatTime(selectedClip.outPoint)}
+                                        {formatTimeDisplay(selectedClip.outPoint)}
                                     </span>
                                 </div>
                                 <div className="property-item">
                                     <label>Duration</label>
                                     <span className="property-value mono">
-                                        {formatTime(selectedClip.outPoint - selectedClip.inPoint)}
+                                        {formatTimeDisplay(selectedClip.outPoint - selectedClip.inPoint)}
                                     </span>
                                 </div>
+                            </div>
+                        </section>
+
+                        {/* Editing Tools */}
+                        <section className="inspector-section">
+                            <h3 className="section-title">Edit at Playhead ({formatTime(playhead)})</h3>
+                            <div className="editing-tools">
+                                <button
+                                    className="edit-btn split-btn"
+                                    onClick={handleSplit}
+                                    disabled={!canSplit}
+                                    title={canSplit ? 'Split clip at playhead (S)' : 'Move playhead inside clip to split'}
+                                >
+                                    ✂️ Split
+                                </button>
+                                <button
+                                    className="edit-btn trim-in-btn"
+                                    onClick={handleTrimIn}
+                                    disabled={!selectedClip || playhead >= selectedClip.outPoint}
+                                    title="Set In point to playhead"
+                                >
+                                    ◀ Trim In
+                                </button>
+                                <button
+                                    className="edit-btn trim-out-btn"
+                                    onClick={handleTrimOut}
+                                    disabled={!selectedClip || playhead <= selectedClip.inPoint}
+                                    title="Set Out point to playhead"
+                                >
+                                    Trim Out ▶
+                                </button>
                             </div>
                         </section>
 
@@ -90,14 +154,6 @@ export function Inspector({ selectedClip, onUpdate }: InspectorProps) {
                                         {speed}x
                                     </button>
                                 ))}
-                            </div>
-                        </section>
-
-                        {/* Transitions (Placeholder) */}
-                        <section className="inspector-section">
-                            <h3 className="section-title">Transitions</h3>
-                            <div className="placeholder-box">
-                                <span>Transition controls will appear here</span>
                             </div>
                         </section>
                     </div>

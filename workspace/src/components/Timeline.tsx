@@ -1,12 +1,19 @@
-import { useRef, useCallback, MouseEvent } from 'react';
-import { useTimeline, formatTime } from '../store';
+import { useRef, useCallback, MouseEvent, useEffect } from 'react';
+import { useTimeline, formatTime, getClipAtTime } from '../store';
 import './Timeline.css';
 
 const TRACK_HEADER_WIDTH = 60;
 const TRACK_HEIGHT = 60;
 
 export function Timeline() {
-    const { state, dispatch, seekTo, selectClip } = useTimeline();
+    const {
+        state,
+        dispatch,
+        seekTo,
+        selectClip,
+        splitClipAtPlayhead,
+        deleteSelectedClip
+    } = useTimeline();
     const { timeline, playhead, selectedClipId, zoom, isPlaying } = state;
 
     const tracksRef = useRef<HTMLDivElement>(null);
@@ -58,6 +65,46 @@ export function Timeline() {
             dispatch({ type: 'SET_ZOOM', payload: Math.max(10, Math.min(200, newZoom)) });
         }
     };
+
+    // Global keyboard shortcuts for editing
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't handle if user is typing in an input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
+            switch (e.key.toLowerCase()) {
+                case 's':
+                    // Split: If a clip is selected and playhead is within it
+                    if (selectedClipId) {
+                        const clip = timeline.clips.find(c => c.id === selectedClipId);
+                        if (clip && playhead > clip.inPoint && playhead < clip.outPoint) {
+                            e.preventDefault();
+                            splitClipAtPlayhead(selectedClipId);
+                        }
+                    } else {
+                        // Split clip under playhead
+                        const clipAtPlayhead = getClipAtTime(timeline.clips, playhead);
+                        if (clipAtPlayhead) {
+                            e.preventDefault();
+                            splitClipAtPlayhead(clipAtPlayhead.id);
+                        }
+                    }
+                    break;
+                case 'delete':
+                case 'backspace':
+                    if (selectedClipId) {
+                        e.preventDefault();
+                        deleteSelectedClip();
+                    }
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedClipId, playhead, timeline.clips, splitClipAtPlayhead, deleteSelectedClip]);
 
     return (
         <div className="timeline-panel">

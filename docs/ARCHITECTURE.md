@@ -180,6 +180,50 @@ Both components use the same JSON structure:
 
 ---
 
+## Timeline Mutation Rules
+
+All edits modify the JSON model only. Remotion re-renders automatically.
+
+### Allowed Mutations
+
+| Operation | JSON Change | Effect |
+|-----------|-------------|--------|
+| **Split** | Creates 2 clips from 1; adjusts inPoint/outPoint | Clip divided at playhead |
+| **Trim In** | Updates clip.inPoint | Start of clip moves forward |
+| **Trim Out** | Updates clip.outPoint | End of clip moves backward |
+| **Delete** | Removes clip from array | Clip removed from timeline |
+| **Add Clip** | Appends new clip to array | New clip appears on track |
+
+### Split Algorithm
+
+```typescript
+// Original clip: { inPoint: 0, outPoint: 10 }
+// Split at playhead: 5
+
+→ Clip 1: { inPoint: 0, outPoint: 5, label: "Clip (L)" }
+→ Clip 2: { inPoint: 5, outPoint: 10, label: "Clip (R)" }
+```
+
+### Trim Algorithm
+
+```typescript
+// Original clip: { inPoint: 2, outPoint: 8 }
+// Trim In to playhead: 4
+→ { inPoint: 4, outPoint: 8 }  // Left portion removed
+
+// Trim Out to playhead: 6
+→ { inPoint: 2, outPoint: 6 }  // Right portion removed
+```
+
+### Invariants
+
+1. `inPoint` must always be < `outPoint`
+2. `inPoint` cannot be negative
+3. Timeline duration = max(clip.outPoint for all clips)
+4. Original video files are never modified
+
+---
+
 ## Workspace State Management
 
 The Electron workspace uses a centralized state management pattern:

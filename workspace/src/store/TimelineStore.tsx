@@ -50,7 +50,12 @@ type TimelineAction =
     | { type: 'SEEK_FORWARD'; payload: number }
     | { type: 'SEEK_BACKWARD'; payload: number }
     | { type: 'SEEK_TO_START' }
-    | { type: 'SEEK_TO_END' };
+    | { type: 'SEEK_TO_END' }
+    // Editing actions
+    | { type: 'SPLIT_CLIP'; payload: { clipId: string; splitTime: number } }
+    | { type: 'TRIM_CLIP_IN'; payload: { clipId: string; newInPoint: number } }
+    | { type: 'TRIM_CLIP_OUT'; payload: { clipId: string; newOutPoint: number } }
+    | { type: 'SPLIT_CLIP_AT_PLAYHEAD'; payload: string };
 
 // ============================================================
 // REDUCER
@@ -191,6 +196,142 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
                 playhead: state.timeline.duration,
             };
 
+        // ============================================================
+        // EDITING ACTIONS - Non-destructive JSON mutations
+        // ============================================================
+
+        case 'SPLIT_CLIP': {
+            const { clipId, splitTime } = action.payload;
+            const clipIndex = state.timeline.clips.findIndex(c => c.id === clipId);
+
+            if (clipIndex === -1) return state;
+
+            const originalClip = state.timeline.clips[clipIndex];
+
+            // Validate split time is within clip bounds
+            if (splitTime <= originalClip.inPoint || splitTime >= originalClip.outPoint) {
+                return state;
+            }
+
+            // Create two new clips from the original
+            const clip1: TimelineClip = {
+                ...originalClip,
+                id: generateId('clip'),
+                outPoint: splitTime,
+                label: `${originalClip.label} (L)`,
+            };
+
+            const clip2: TimelineClip = {
+                ...originalClip,
+                id: generateId('clip'),
+                inPoint: splitTime,
+                label: `${originalClip.label} (R)`,
+                position: originalClip.position + 1,
+            };
+
+            // Replace original with two new clips
+            const newClips = [
+                ...state.timeline.clips.slice(0, clipIndex),
+                clip1,
+                clip2,
+                ...state.timeline.clips.slice(clipIndex + 1),
+            ].map((c, i) => ({ ...c, position: i }));
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    clips: newClips,
+                    updatedAt: new Date().toISOString(),
+                },
+                selectedClipId: clip1.id, // Select the left part
+            };
+        }
+
+        case 'SPLIT_CLIP_AT_PLAYHEAD': {
+            const clipId = action.payload;
+            const clip = state.timeline.clips.find(c => c.id === clipId);
+
+            if (!clip) return state;
+
+            // Check if playhead is within this clip
+            if (state.playhead <= clip.inPoint || state.playhead >= clip.outPoint) {
+                return state;
+            }
+
+            // Delegate to SPLIT_CLIP action
+            return timelineReducer(state, {
+                type: 'SPLIT_CLIP',
+                payload: { clipId, splitTime: state.playhead },
+            });
+        }
+
+        case 'TRIM_CLIP_IN': {
+            const { clipId, newInPoint } = action.payload;
+            const clipIndex = state.timeline.clips.findIndex(c => c.id === clipId);
+
+            if (clipIndex === -1) return state;
+
+            const clip = state.timeline.clips[clipIndex];
+
+            // Validate: in point must be before out point
+            if (newInPoint >= clip.outPoint || newInPoint < 0) {
+                return state;
+            }
+
+            const updatedClips = state.timeline.clips.map(c =>
+                c.id === clipId
+                    ? { ...c, inPoint: newInPoint }
+                    : c
+            );
+
+            // Recalculate duration
+            const maxEnd = Math.max(...updatedClips.map(c => c.outPoint), 0);
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    clips: updatedClips,
+                    duration: maxEnd,
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        case 'TRIM_CLIP_OUT': {
+            const { clipId, newOutPoint } = action.payload;
+            const clipIndex = state.timeline.clips.findIndex(c => c.id === clipId);
+
+            if (clipIndex === -1) return state;
+
+            const clip = state.timeline.clips[clipIndex];
+
+            // Validate: out point must be after in point
+            if (newOutPoint <= clip.inPoint) {
+                return state;
+            }
+
+            const updatedClips = state.timeline.clips.map(c =>
+                c.id === clipId
+                    ? { ...c, outPoint: newOutPoint }
+                    : c
+            );
+
+            // Recalculate duration
+            const maxEnd = Math.max(...updatedClips.map(c => c.outPoint), 0);
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    clips: updatedClips,
+                    duration: maxEnd,
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
         default:
             return state;
     }
@@ -224,6 +365,13 @@ interface TimelineContextValue {
     togglePlay: () => void;
     seekTo: (time: number) => void;
     selectClip: (id: string | null) => void;
+
+    // Editing methods
+    splitClipAtPlayhead: (clipId: string) => void;
+    splitClip: (clipId: string, time: number) => void;
+    trimClipIn: (clipId: string, newInPoint: number) => void;
+    trimClipOut: (clipId: string, newOutPoint: number) => void;
+    deleteSelectedClip: () => void;
 
     // Video element ref for synchronization
     videoRef: React.RefObject<HTMLVideoElement>;
@@ -279,6 +427,29 @@ export function TimelineProvider({ children, initialTimeline }: TimelineProvider
         dispatch({ type: 'SELECT_CLIP', payload: id });
     }, []);
 
+    // Editing methods
+    const splitClipAtPlayhead = useCallback((clipId: string) => {
+        dispatch({ type: 'SPLIT_CLIP_AT_PLAYHEAD', payload: clipId });
+    }, []);
+
+    const splitClip = useCallback((clipId: string, time: number) => {
+        dispatch({ type: 'SPLIT_CLIP', payload: { clipId, splitTime: time } });
+    }, []);
+
+    const trimClipIn = useCallback((clipId: string, newInPoint: number) => {
+        dispatch({ type: 'TRIM_CLIP_IN', payload: { clipId, newInPoint } });
+    }, []);
+
+    const trimClipOut = useCallback((clipId: string, newOutPoint: number) => {
+        dispatch({ type: 'TRIM_CLIP_OUT', payload: { clipId, newOutPoint } });
+    }, []);
+
+    const deleteSelectedClip = useCallback(() => {
+        if (state.selectedClipId) {
+            dispatch({ type: 'REMOVE_CLIP', payload: state.selectedClipId });
+        }
+    }, [state.selectedClipId]);
+
     // Sync video playback with isPlaying state
     useEffect(() => {
         if (!videoRef.current) return;
@@ -326,6 +497,12 @@ export function TimelineProvider({ children, initialTimeline }: TimelineProvider
         togglePlay,
         seekTo,
         selectClip,
+        // Editing
+        splitClipAtPlayhead,
+        splitClip,
+        trimClipIn,
+        trimClipOut,
+        deleteSelectedClip,
         videoRef,
     };
 

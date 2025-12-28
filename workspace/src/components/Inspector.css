@@ -155,6 +155,55 @@
     color: white;
 }
 
+/* Editing Tools */
+.editing-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.edit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--border-active);
+}
+
+.edit-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.split-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.trim-in-btn:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+.trim-out-btn:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: #22c55e;
+}
+
 /* Placeholder */
 .placeholder-box {
     display: flex;

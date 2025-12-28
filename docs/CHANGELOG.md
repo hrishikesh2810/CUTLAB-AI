@@ -45,6 +45,33 @@ All notable changes to the CUTLAB AI project are documented here.
 
 ---
 
+## Editing – Split & Trim
+
+### Added
+- Split clip at playhead position (S key or button)
+- Trim In: Set clip start to playhead position
+- Trim Out: Set clip end to playhead position
+- Delete selected clip (Delete/Backspace key)
+- Split button in Inspector panel
+- Trim In/Out buttons in Inspector panel
+- Visual editing tools in "Edit at Playhead" section
+
+### Technical
+- Non-destructive editing: Only JSON model is modified
+- Remotion automatically re-renders on state change
+- Reducer actions: SPLIT_CLIP, TRIM_CLIP_IN, TRIM_CLIP_OUT
+- Timeline duration auto-recalculated after edits
+- Split creates two new clips with (L) and (R) labels
+
+### Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| S | Split clip at playhead |
+| Delete | Delete selected clip |
+| Backspace | Delete selected clip |
+
+---
+
 ## Timeline Core
 
 ### Added
