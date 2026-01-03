@@ -4,7 +4,20 @@ All notable changes to the CUTLAB AI project are documented here.
 
 ---
 
+## Workspace – AI Markers
+
+### Added
+- **AI Cut Suggestions on Timeline**: Suggestions rendered as interactive annotation markers
+- **Manual Application Control**:
+  - Apply suggestion → Adds permanent marker to timeline
+  - Ignore suggestion → Hides from list
+- **Marker Visualization**: Distinct styling for suggestion markers vs regular time markers
+- **Non-Destructive Integration**: Visual overlay that doesn't modify clip structure until applied
+
+---
+
 ## Navigation & AI Integration
+
 
 ### Added
 - **React Router Navigation** with 6 pages:

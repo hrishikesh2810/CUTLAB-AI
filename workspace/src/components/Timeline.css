@@ -1,3 +1,6 @@
+/**
+ * Timeline Styles
+ */
 .timeline-panel {
     height: 100%;
     display: flex;
@@ -98,6 +101,62 @@
     width: 1px;
     height: 8px;
     background: var(--border-color);
+}
+
+/* Timeline Annotation Markers (AI, User) */
+.timeline-annotation-marker {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    z-index: 20;
+    pointer-events: none;
+    /* Allow clicking through to ruler */
+}
+
+.annotation-head {
+    position: absolute;
+    top: 0;
+    left: -4px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 21;
+}
+
+.annotation-line {
+    position: absolute;
+    top: 9px;
+    left: 0;
+    width: 1px;
+    height: 100vh;
+    /* Extend down through tracks */
+    opacity: 0.5;
+}
+
+.annotation-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-tooltip);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    margin-bottom: 4px;
+    z-index: 30;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.annotation-head:hover .annotation-tooltip {
+    opacity: 1;
 }
 
 /* Tracks */

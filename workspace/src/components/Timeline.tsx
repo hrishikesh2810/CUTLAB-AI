@@ -31,10 +31,10 @@ export function Timeline() {
     };
 
     const markerInterval = getMarkerInterval();
-    const markers: number[] = [];
+    const timeTicks: number[] = [];
     const maxTime = Math.ceil(timeline.duration || 30);
     for (let i = 0; i <= maxTime; i += markerInterval) {
-        markers.push(i);
+        timeTicks.push(i);
     }
 
     // Click to seek on ruler/track
@@ -136,7 +136,9 @@ export function Timeline() {
                     onClick={handleTimelineClick}
                 >
                     <div className="ruler-header" />
-                    {markers.map((second) => (
+
+                    {/* Time Ticks */}
+                    {timeTicks.map((second) => (
                         <div
                             key={second}
                             className="time-marker"
@@ -144,6 +146,28 @@ export function Timeline() {
                         >
                             <span className="marker-label">{formatTime(second)}</span>
                             <div className="marker-line" />
+                        </div>
+                    ))}
+
+                    {/* Annotation Markers (AI, etc) */}
+                    {timeline.markers?.map((marker) => (
+                        <div
+                            key={marker.id}
+                            className="timeline-annotation-marker"
+                            style={{ left: TRACK_HEADER_WIDTH + (marker.position * zoom) }}
+                        >
+                            <div
+                                className="annotation-head"
+                                style={{ backgroundColor: marker.color }}
+                                title={marker.label}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    seekTo(marker.position);
+                                }}
+                            >
+                                <div className="annotation-tooltip">{marker.label}</div>
+                            </div>
+                            <div className="annotation-line" style={{ backgroundColor: marker.color }} />
                         </div>
                     ))}
                 </div>
