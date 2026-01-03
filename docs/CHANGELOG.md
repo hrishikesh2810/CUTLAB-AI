@@ -4,6 +4,67 @@ All notable changes to the CUTLAB AI project are documented here.
 
 ---
 
+## Navigation & AI Integration
+
+### Added
+- **React Router Navigation** with 6 pages:
+  - `/upload` - Video upload with drag-and-drop
+  - `/analysis` - AI analysis hub with overview
+  - `/analysis/cuts` - Cut suggestions with Apply/Ignore controls
+  - `/analysis/audio` - Audio analysis with waveform visualization
+  - `/workspace` - Main editing workspace with AI panel
+  - `/export` - Export options with format selection
+
+- **AI Insights Data Contract** (`ai_insights.json`):
+  - Schema version tracking
+  - Suggestions array with confidence scores
+  - Audio segments (speech, music, silence, peaks)
+  - Scene boundaries
+
+- **AI Integration in Workspace**:
+  - AI Suggestions Panel (side panel)
+  - Timeline markers for applied suggestions
+  - Apply/Ignore controls per suggestion
+  - Status filtering (pending/applied/ignored)
+
+- **Clean Data Flow**:
+  - `timeline.json` - Editor-owned, mutable
+  - `ai_insights.json` - AI-owned, read-only in workspace
+  - Suggestions update only status, not AI data
+
+### Technical
+- `AIInsightsStore.tsx` - State management for AI data
+- `ai-insights.ts` - TypeScript interfaces for data contract
+- `AISuggestionsPanel.tsx` - Workspace side panel component
+- `ADD_MARKER` / `REMOVE_MARKER` actions in TimelineStore
+- Nested routes for Analysis sub-pages
+
+### Data Contracts
+
+**ai_insights.json**
+```json
+{
+  "version": "1.0",
+  "projectId": "...",
+  "suggestions": [
+    {
+      "id": "sug_1",
+      "type": "cut | keep | trim | transition",
+      "startTime": 15.5,
+      "endTime": 22.3,
+      "confidence": "high | medium | low",
+      "score": 0.92,
+      "reason": "AI explanation",
+      "status": "pending | applied | ignored"
+    }
+  ],
+  "audioSegments": [...],
+  "sceneBoundaries": [...]
+}
+```
+
+---
+
 ## Day 6 – Workspace Foundation
 
 ### Added

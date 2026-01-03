@@ -180,6 +180,115 @@ Both components use the same JSON structure:
 
 ---
 
+## AI–Workspace Data Flow
+
+The AI analysis and Workspace editor are **loosely coupled** through a shared data contract.
+
+### Data Ownership
+
+| File | Owner | Mutability in Workspace |
+|------|-------|-------------------------|
+| `timeline.json` | Workspace Editor | Read/Write |
+| `ai_insights.json` | AI Engine | Read-Only |
+
+### Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     ANALYSIS PAGES                               │
+│  /upload → /analysis → /analysis/cuts → /analysis/audio         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────┐        ┌─────────────────┐                     │
+│   │  AI Engine  │───────▶│ ai_insights.json│                     │
+│   │  (Python)   │        │  (AI-owned)     │                     │
+│   └─────────────┘        └────────┬────────┘                     │
+│                                   │ (read-only)                  │
+├───────────────────────────────────┼─────────────────────────────┤
+│                     WORKSPACE                                    │
+│                                   ▼                              │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              AIInsightsStore (React Context)              │   │
+│   │  - Loads ai_insights.json                                 │   │
+│   │  - Tracks suggestion status (pending/applied/ignored)    │   │
+│   │  - Does NOT modify original AI data                       │   │
+│   └──────────────────────────┬────────────────────────────────┘   │
+│                              │                                    │
+│   ┌──────────────────────────┴────────────────────────────────┐   │
+│   │              AISuggestionsPanel Component                  │   │
+│   │  - Displays suggestions with Apply/Ignore controls         │   │
+│   │  - "Apply" → dispatches ADD_MARKER to TimelineStore        │   │
+│   │  - Updates suggestion status (not AI data)                 │   │
+│   └──────────────────────────┬────────────────────────────────┘   │
+│                              │                                    │
+│                              ▼                                    │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              TimelineStore (React Context)               │   │
+│   │  - Owns timeline.json                                    │   │
+│   │  - ADD_MARKER action inserts AI suggestion markers       │   │
+│   │  - All manual edits modify timeline only                 │   │
+│   └──────────────────────────┬────────────────────────────────┘   │
+│                              │                                    │
+│                              ▼                                    │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              timeline.json (Editor-owned)                │   │
+│   │  - Clips, transitions, markers                           │   │
+│   │  - Markers include AI suggestion references              │   │
+│   └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### AI Insights Schema (ai_insights.json)
+
+```typescript
+interface AIInsights {
+    version: string;
+    projectId: string;
+    videoPath: string;
+    createdAt: string;
+    summary: {
+        totalDuration: number;
+        sceneCount: number;
+        suggestedCuts: number;
+        suggestedKeeps: number;
+        averageConfidence: number;
+    };
+    suggestions: AISuggestion[];
+    audioSegments: AudioSegment[];
+    sceneBoundaries: SceneBoundary[];
+}
+
+interface AISuggestion {
+    id: string;
+    type: 'cut' | 'keep' | 'trim' | 'transition';
+    startTime: number;
+    endTime: number;
+    confidence: 'high' | 'medium' | 'low';
+    score: number;           // 0-1
+    reason: string;          // Human-readable
+    status?: 'pending' | 'applied' | 'ignored';
+}
+```
+
+### Apply Workflow
+
+1. User clicks "Apply" on a suggestion
+2. `handleApply()` in AISuggestionsPanel:
+   - Dispatches `ADD_MARKER` to TimelineStore
+   - Calls `applySuggestion(id)` to update status
+3. TimelineStore adds marker to `timeline.json`
+4. AIInsightsStore updates local status (not AI data)
+5. Timeline UI re-renders with new marker
+
+### Key Invariants
+
+1. **AI data is immutable**: Workspace never modifies `ai_insights.json`
+2. **Timeline owns markers**: Applied suggestions become timeline markers
+3. **Status is local**: Applied/ignored status stored in AIInsightsStore
+4. **Clean separation**: AI runs only on Analysis pages, Workspace reads results
+
+---
+
 ## Timeline Mutation Rules
 
 All edits modify the JSON model only. Remotion re-renders automatically.

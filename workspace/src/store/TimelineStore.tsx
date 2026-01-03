@@ -6,7 +6,10 @@
  */
 
 import { createContext, useContext, useReducer, ReactNode, useCallback, useRef, useEffect } from 'react';
-import { TimelineData, TimelineClip, TimelineTransition, TransitionType, createEmptyTimeline, generateId } from '../types';
+import { TimelineData, TimelineClip, TimelineTransition, TimelineMarker, TransitionType, createEmptyTimeline, generateId as genId } from '../types';
+
+// Re-export generateId for external use
+export const generateId = genId;
 
 // ============================================================
 // STATE INTERFACE
@@ -61,7 +64,11 @@ type TimelineAction =
     | { type: 'UPDATE_TRANSITION'; payload: { id: string; updates: Partial<TimelineTransition> } }
     | { type: 'REMOVE_TRANSITION'; payload: string }
     // Speed actions
-    | { type: 'SET_CLIP_SPEED'; payload: { clipId: string; speed: number } };
+    | { type: 'SET_CLIP_SPEED'; payload: { clipId: string; speed: number } }
+    // Marker actions (for AI integration)
+    | { type: 'ADD_MARKER'; payload: TimelineMarker }
+    | { type: 'REMOVE_MARKER'; payload: string }
+    | { type: 'CLEAR_AI_MARKERS' };
 
 // ============================================================
 // REDUCER
@@ -415,6 +422,52 @@ function timelineReducer(state: TimelineState, action: TimelineAction): Timeline
                 timeline: {
                     ...state.timeline,
                     clips: updatedClips,
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        // ============================================================
+        // MARKER ACTIONS (for AI integration)
+        // ============================================================
+
+        case 'ADD_MARKER': {
+            const newMarker = action.payload;
+
+            // Avoid duplicate markers at same position with same label
+            const exists = state.timeline.markers.some(
+                m => m.position === newMarker.position && m.label === newMarker.label
+            );
+
+            if (exists) return state;
+
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    markers: [...state.timeline.markers, newMarker],
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        case 'REMOVE_MARKER': {
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    markers: state.timeline.markers.filter(m => m.id !== action.payload),
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+        }
+
+        case 'CLEAR_AI_MARKERS': {
+            return {
+                ...state,
+                timeline: {
+                    ...state.timeline,
+                    markers: state.timeline.markers.filter(m => m.type !== 'ai-suggestion'),
                     updatedAt: new Date().toISOString(),
                 },
             };
