@@ -22,8 +22,8 @@ def run_services():
         stdout=sys.stdout,
         stderr=sys.stderr
     )
-    print("Frontend started")
-
+    print("Streamlit Frontend started")
+    
     try:
         while True:
             time.sleep(1)

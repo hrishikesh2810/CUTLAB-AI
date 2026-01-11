@@ -70,6 +70,23 @@ def set_custom_css():
     """, unsafe_allow_html=True)
 
 
+def convert_scenes_to_timeline(scenes, project_id):
+    """Convert AI scenes to timeline clips."""
+    clips = []
+    for s in scenes:
+        dur = s['end_time'] - s['start_time']
+        clips.append({
+            "clip_id": f"scene_{s['scene_id']}_{project_id[:4]}",
+            "label": f"Scene {s['scene_id']}",
+            "source_video": project_id,
+            "start_seconds": s['start_time'], # Source In
+            "end_seconds": s['end_time'],     # Source Out
+            "duration": dur,
+            "speed": 1.0,
+            "transform": {"scale": 1.0, "x": 0, "y": 0}
+        })
+    return {"clips": clips, "duration": sum(c['duration'] for c in clips), "transitions": []}
+
 def get_audio_emoji(label: str) -> str:
     """Get emoji for audio label."""
     label_lower = label.lower()
@@ -163,11 +180,54 @@ def render_suggestion_card(suggestion: dict, index: int) -> bool:
         return accepted
 
 
-def render_timeline_clip(clip: dict, index: int, video_duration: float = 60.0):
+def render_timeline_clip(clip: dict, index: int, video_duration: float = 60.0, prev_bound: float = 0.0, next_bound: float = float('inf')):
     """Render a timeline clip with advanced edit controls."""
     clip_id = clip['clip_id']
     
     with st.expander(f"🎬 {clip['label']} | {clip['start_formatted']} → {clip['end_formatted']} | {clip['speed']}x", expanded=False):
+        # 1. Shift Position (Horizontal Move)
+        st.markdown("##### ↔️ Shift Position")
+        # Ensure bounds are floats
+        prev_bound = float(prev_bound)
+        next_bound = float(next_bound)
+        
+        # Calculate max allow shift
+        # Current Start: clip['start_seconds']
+        # Slider range: prev_bound to (next_bound - duration)
+        
+        # Guard against infinity for slider
+        safe_max = next_bound if next_bound != float('inf') else video_duration
+        # Subtract duration to get max START position
+        max_start = max(prev_bound, safe_max - (clip['end_seconds'] - clip['start_seconds']))
+        
+        if max_start > prev_bound:
+             new_start_shift = st.slider(
+                "Timeline Start",
+                min_value=prev_bound,
+                max_value=max_start,
+                value=float(clip['start_seconds']),
+                step=0.1,
+                key=f"shift_{clip_id}"
+            )
+             
+             if new_start_shift != float(clip['start_seconds']):
+                 # Trigger Move Logic via Update
+                 delta = new_start_shift - clip['start_seconds']
+                 if st.button(f"Confirm Shift to {new_start_shift}s", key=f"confirm_shift_{clip_id}"):
+                     try:
+                        requests.put(
+                            f"{BACKEND_URL}/workspace/{st.session_state.project_id}/timeline/clip/{clip_id}",
+                            json={
+                                "start_seconds": new_start_shift,
+                                "end_seconds": clip['end_seconds'] + delta
+                            }
+                        )
+                        st.rerun()
+                     except:
+                         pass
+        
+        st.divider()
+
         # Info row
         info_col1, info_col2, info_col3 = st.columns(3)
         with info_col1:
@@ -393,6 +453,9 @@ def main():
         if saved_project:
             load_project_data(saved_project)
 
+    if 'sequence' not in st.session_state:
+        st.session_state.sequence = {'width': 1920, 'height': 1080, 'fps': 30}
+
     # --- SIDEBAR ---
     with st.sidebar:
         st.header("📁 Project")
@@ -613,175 +676,141 @@ def main():
         st.subheader("🎛️ Workspace")
         st.caption("Manual video editing environment • Build your timeline")
         
+        # --- DATA SYNC & RESTORE ---
+        if not st.session_state.get('workspace_scenes') and st.session_state.get('scenes'):
+            st.session_state.workspace_scenes = []
+            for s in st.session_state.scenes:
+                if 'duration' not in s: s['duration'] = s['end_time'] - s['start_time']
+                st.session_state.workspace_scenes.append(s)
+            
         if not st.session_state.project_id:
             st.warning("⚠️ Please upload a video first.")
         else:
             # Load workspace timeline
             if st.session_state.workspace_timeline is None:
-                load_workspace_timeline(st.session_state.project_id)
-            
-            # Layout: Preview | Timeline
-            col_preview, col_timeline = st.columns([1, 1])
-            
-            with col_preview:
-                st.markdown("### 🎬 Preview")
-                
-                # Find video file for preview
-                video_path = None
-                video_dir = "storage/videos"
-                if os.path.exists(video_dir):
-                    for f in os.listdir(video_dir):
-                        if f.startswith(st.session_state.project_id):
-                            video_path = os.path.join(video_dir, f)
-                            break
-                
-                if video_path and os.path.exists(video_path):
-                    st.video(video_path)
-                else:
-                    st.info("Video preview will appear here")
-                
-                # Clip selector for preview
-                if st.session_state.workspace_timeline and st.session_state.workspace_timeline.get('clips'):
-                    clips = st.session_state.workspace_timeline['clips']
-                    clip_labels = [f"{c['label']} ({c['start_formatted']} - {c['end_formatted']})" for c in clips]
-                    selected_clip_idx = st.selectbox("Select Clip to Preview", range(len(clip_labels)), format_func=lambda x: clip_labels[x])
-                    
-                    if selected_clip_idx is not None and selected_clip_idx < len(clips):
-                        selected_clip = clips[selected_clip_idx]
-                        st.info(f"Selected: **{selected_clip['label']}** | {selected_clip['start_formatted']} → {selected_clip['end_formatted']}")
-            
-            with col_timeline:
-                st.markdown("### 📐 Timeline")
-                
-                # Timeline controls
-                ctrl_col1, ctrl_col2, ctrl_col3 = st.columns(3)
-                
-                with ctrl_col1:
-                    if st.button("🔄 Refresh Timeline", use_container_width=True):
-                        load_workspace_timeline(st.session_state.project_id)
-                        st.rerun()
-                
-                with ctrl_col2:
-                    if st.session_state.suggestions and len(st.session_state.suggestions) > 0:
-                        if st.button("📥 Import from AI", use_container_width=True):
-                            try:
-                                response = requests.post(
-                                    f"{BACKEND_URL}/workspace/{st.session_state.project_id}/timeline/from-suggestions"
-                                )
-                                if response.status_code == 200:
-                                    data = response.json()
-                                    st.session_state.workspace_timeline = data['timeline']
-                                    st.success(data['message'])
-                                    st.rerun()
-                            except Exception as e:
-                                st.error(f"Failed: {e}")
-                
-                with ctrl_col3:
-                    if st.button("🗑️ Clear Timeline", use_container_width=True):
-                        try:
-                            response = requests.delete(
-                                f"{BACKEND_URL}/workspace/{st.session_state.project_id}/timeline"
-                            )
-                            if response.status_code == 200:
-                                st.session_state.workspace_timeline = response.json()['timeline']
-                                st.success("Timeline cleared")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Failed: {e}")
-                
-                st.divider()
-                
-                # Display timeline clips with transitions
-                if st.session_state.workspace_timeline:
-                    clips = st.session_state.workspace_timeline.get('clips', [])
-                    transitions = st.session_state.workspace_timeline.get('transitions', [])
-                    total_duration = st.session_state.workspace_timeline.get('duration', 0)
-                    
-                    # Get video duration for trim bounds
-                    video_dur = st.session_state.metadata.get('duration', 60.0) if st.session_state.metadata else 60.0
-                    
-                    # Build transition lookup
-                    trans_lookup = {}
-                    for t in transitions:
-                        key = (t['from_clip_id'], t['to_clip_id'])
-                        trans_lookup[key] = t
-                    
-                    st.caption(f"**{len(clips)} clips** | **{len(transitions)} transitions** | Total: {total_duration:.2f}s")
-                    
-                    if clips:
-                        # Auto-generate transitions button
-                        auto_col1, auto_col2 = st.columns([3, 1])
-                        with auto_col2:
-                            if st.button("🔀 Auto-Add Transitions", use_container_width=True):
-                                try:
-                                    response = requests.post(
-                                        f"{BACKEND_URL}/workspace/{st.session_state.project_id}/timeline/transitions/auto",
-                                        params={"default_type": "cut"}
-                                    )
-                                    if response.status_code == 200:
-                                        st.session_state.workspace_timeline = response.json()['timeline']
-                                        st.toast("Transitions generated!", icon="🔀")
-                                        st.rerun()
-                                except:
-                                    pass
-                        
-                        st.divider()
-                        
-                        # Render clips with transitions between them
-                        for i, clip in enumerate(clips):
-                            render_timeline_clip(clip, i, video_dur)
-                            
-                            # Show transition control between this clip and next
-                            if i < len(clips) - 1:
-                                next_clip = clips[i + 1]
-                                existing_trans = trans_lookup.get((clip['clip_id'], next_clip['clip_id']))
-                                
-                                st.markdown(f"<div style='text-align: center; color: #888; padding: 5px 0;'>⬇️ Transition: {clip['label']} → {next_clip['label']}</div>", unsafe_allow_html=True)
-                                render_transition_control(clip, next_clip, existing_trans)
-                                st.markdown("---")
+                loaded = load_workspace_timeline(st.session_state.project_id)
+                if not loaded:
+                    # AUTO-POPULATE from scenes if available
+                    if st.session_state.get('workspace_scenes'):
+                        st.session_state.workspace_timeline = convert_scenes_to_timeline(
+                            st.session_state.workspace_scenes, 
+                            st.session_state.project_id
+                        )
+                        st.toast("Auto-populated timeline from scenes", icon="🎞️")
                     else:
-                        st.info("Timeline is empty. Add clips manually or import from AI suggestions.")
-                else:
-                    st.info("Loading timeline...")
+                        st.session_state.workspace_timeline = {
+                            "clips": [], "duration": 0, "transitions": []
+                        }
+            
+            # === 4-PANEL LAYOUT ===
+            row1_col1, row1_col2, row1_col3 = st.columns([1, 2.5, 1.2], gap="medium")
+            
+            # --- LEFT: MEDIA LIBRARY ---
+            with row1_col1:
+                st.markdown("#### 📂 Media")
+                media_tab1, media_tab2 = st.tabs(["Scenes", "Library"])
                 
-                # Add clip manually
-                st.divider()
-                st.markdown("#### ➕ Add Clip Manually")
-                
-                with st.form("add_clip_form"):
-                    form_col1, form_col2 = st.columns(2)
-                    
-                    with form_col1:
-                        clip_label = st.text_input("Clip Label", value="New Clip")
-                        start_sec = st.number_input("Start (seconds)", min_value=0.0, value=0.0, step=0.1)
-                    
-                    with form_col2:
-                        clip_speed = st.number_input("Speed", min_value=0.1, max_value=4.0, value=1.0, step=0.1)
-                        end_sec = st.number_input("End (seconds)", min_value=0.0, value=5.0, step=0.1)
-                    
-                    if st.form_submit_button("➕ Add Clip", use_container_width=True):
-                        if end_sec > start_sec:
-                            try:
-                                response = requests.post(
-                                    f"{BACKEND_URL}/workspace/{st.session_state.project_id}/timeline/clip",
-                                    json={
-                                        "source_video": st.session_state.project_id,
-                                        "source_filename": st.session_state.metadata.get('filename', ''),
-                                        "start_seconds": start_sec,
-                                        "end_seconds": end_sec,
-                                        "speed": clip_speed,
-                                        "label": clip_label
-                                    }
-                                )
-                                if response.status_code == 200:
-                                    st.session_state.workspace_timeline = response.json()['timeline']
-                                    st.success("Clip added!")
-                                    st.rerun()
-                            except Exception as e:
-                                st.error(f"Failed: {e}")
+                with media_tab1: # Current Project Scenes
+                    with st.container(height=400, border=True):
+                        if st.session_state.workspace_scenes:
+                            scene_cols = st.columns(2)
+                            for i, s in enumerate(st.session_state.workspace_scenes):
+                                with scene_cols[i % 2]:
+                                    st.markdown(f"""<div style="background:#262730;border:1px solid #444;border-radius:6px;padding:8px;text-align:center;">
+                                       <div style="font-size:24px;">🎬</div>
+                                       <div style="font-size:10px;">Scene {s['scene_id']}</div>
+                                       <div style="font-size:9px;color:#888;">{s['duration']:.1f}s</div>
+                                    </div>""", unsafe_allow_html=True)
                         else:
-                            st.error("End time must be greater than start time")
+                            st.info("No scenes")
+                            
+                with media_tab2: # Global Library
+                    st.info("Global Library")
 
+            # --- CENTER: PREVIEW ---
+            with row1_col2:
+                st.markdown("#### 🎬 Preview")
+                container_h = 400
+                
+                # Canvas Logic (Aspect Ratio)
+                seq_w = st.session_state.sequence['width']
+                seq_h = st.session_state.sequence['height']
+                ar_val = seq_w / seq_h
+                
+                # HTML Canvas
+                st.components.v1.html(f"""
+                <div style="
+                    display: flex; justify-content: center; align-items: center;
+                    height: {container_h}px; background-color: #000;
+                ">
+                    <div style="
+                        aspect-ratio: {ar_val};
+                        height: 90%; max-width: 100%;
+                        background: #111; border: 1px solid #333;
+                        display: flex; justify-content: center; align-items: center;
+                        color: #555; font-family: sans-serif;
+                    ">
+                        {seq_w}x{seq_h}<br>Preview Canvas
+                    </div>
+                </div>
+                """, height=container_h)
+
+            # --- RIGHT: INSPECTOR ---
+            with row1_col3:
+                st.markdown("#### ⚙️ Inspector")
+                st.caption("Settings")
+                st.session_state.sequence['width'] = st.number_input("Width", value=st.session_state.sequence['width'])
+                st.session_state.sequence['height'] = st.number_input("Height", value=st.session_state.sequence['height'])
+
+            st.divider()
+
+            # --- BOTTOM: TIMELINE ---
+            if st.session_state.workspace_timeline:
+                clips = st.session_state.workspace_timeline.get('clips', [])
+                total_duration = st.session_state.workspace_timeline.get('duration', 0)
+                video_dur = st.session_state.metadata.get('duration', 60.0) if st.session_state.metadata else 60.0
+
+                # VISUAL HTML TIMELINE
+                if clips:
+                    st.markdown("### 🎞️ Visual Timeline")
+                    zoom = st.slider("🔍 Zoom (px/sec)", 10, 200, 50, key="tl_zoom")
+                    
+                    html_blocks = []
+                    current_x = 0
+                    colors = ["#FF4B4B", "#FFA421", "#FFE312", "#00D4B1", "#0083B8"]
+                    
+                    for i, clip in enumerate(clips):
+                        c_dur = clip.get('duration', 5.0)
+                        block_w = c_dur * zoom
+                        color = colors[i % len(colors)]
+                        safe_label = clip['label'].replace("'", "")
+                        
+                        html_blocks.append(f"""
+                        <div style="position:absolute;left:{current_x}px;top:5px;width:{block_w}px;height:40px;background:{color};opacity:0.9;border-radius:4px;padding:4px;font-size:10px;font-weight:bold;color:#111;overflow:hidden;white-space:nowrap;" title="{safe_label}">
+                            {safe_label}
+                        </div>
+                        """)
+                        current_x += block_w
+                    
+                    st.components.v1.html(f"""
+                    <div style="width:100%;overflow-x:auto;background:#1a1c24;height:60px;position:relative;border:1px solid #333;">
+                        <div style="width:{max(current_x+100, 100)}px;height:100%;position:relative;">
+                             {''.join(html_blocks)}
+                        </div>
+                    </div>
+                    """, height=80)
+                
+                st.divider()
+                
+                # Clip List with Controls
+                for i, clip in enumerate(clips):
+                    prev_end = clips[i-1]['end_seconds'] if i > 0 else 0.0
+                    next_start = clips[i+1]['start_seconds'] if i < len(clips)-1 else video_dur
+                    render_timeline_clip(clip, i, video_dur, prev_bound=prev_end, next_bound=next_start)
+
+     # TAB 5: Export (Remained outside)
+     
+    # TAB 5: Export (Reconnecting to existing flow)
     # TAB 5: Export
     with tab5:
         st.subheader("📦 Export Timeline")

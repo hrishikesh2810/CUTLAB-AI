@@ -1,0 +1,61 @@
+{
+  "source": "audio_analysis",
+  "suggested_cuts": [
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 1.14
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 2.51
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 3.62
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 10.19
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 13.56
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 15.65
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 21.32
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 22.18
+    },
+    {
+      "confidence": 0.9,
+      "intent": "music_sync",
+      "reason": "beat_and_peak",
+      "timestamp": 23.31
+    }
+  ],
+  "tempo_bpm": 172.27,
+  "version": "1.1"
+}

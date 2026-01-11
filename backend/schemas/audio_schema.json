@@ -1,0 +1,45 @@
+{
+    "type": "object",
+    "properties": {
+        "source": {
+            "type": "string",
+            "enum": [
+                "audio_analysis"
+            ]
+        },
+        "version": {
+            "type": "string"
+        },
+        "tempo_bpm": {
+            "type": "number"
+        },
+        "suggested_cuts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "timestamp": {
+                        "type": "number"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "confidence": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "timestamp",
+                    "reason",
+                    "confidence"
+                ]
+            }
+        }
+    },
+    "required": [
+        "source",
+        "version",
+        "tempo_bpm",
+        "suggested_cuts"
+    ]
+}

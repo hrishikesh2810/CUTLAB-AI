@@ -22,6 +22,7 @@ class VideoMetadata(Base):
     
     scenes = relationship("VideoScene", back_populates="video")
     cut_suggestions = relationship("CutSuggestion", back_populates="video")
+    timelines = relationship("ProjectTimeline", back_populates="video")
 
 class VideoScene(Base):
     __tablename__ = "video_scenes"
@@ -54,6 +55,17 @@ class CutSuggestion(Base):
     repetitiveness = Column(Float)
     
     video = relationship("VideoMetadata", back_populates="cut_suggestions")
+
+class ProjectTimeline(Base):
+    __tablename__ = "project_timelines"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(String, ForeignKey("video_metadata.project_id"), index=True)
+    version = Column(Integer, default=1)
+    timeline_json = Column(Text)  # Stores the TimelineProject JSON schema
+    updated_at = Column(String)   # ISO format timestamp
+    
+    video = relationship("VideoMetadata", back_populates="timelines")
 
 def init_db():
     # Create parent directory if it doesn't exist

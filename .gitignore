@@ -4,4 +4,11 @@ storage/videos/
 storage/metadata.db
 .DS_Store
 venv/
+.venv/
 .env
+node_modules/
+dist/
+build/
+.idea/
+.vscode/
+*.log
