@@ -1,99 +1,113 @@
-# CUTLAB AI
+# CUTLAB AI - Next-Gen Video Editor
 
-AI-Powered Video Editing & Scene Detection Platform  
+🎬 **AI-powered video editing assistant** with audio-aware smart cut suggestions, scene detection, and a professional timeline editor.
 (Project developed as part of an academic initiative associated with IIT Ropar)
 
 ---
 
-## 🧠 About the Project
+## 🚀 Quick Start
 
-CUTLAB AI is an intelligent video editing platform designed to assist editors by automatically analyzing video content and suggesting smart cuts, scenes, and transitions.
+### Prerequisites
+- Python 3.10+ with pip
+- Node.js 20+ with npm
+- FFmpeg (for video processing)
 
-This project is being developed as part of an academic project associated with **IIT Ropar**, where the focus is on leveraging modern AI capabilities to simplify complex video editing workflows.
+### 1. Start the Backend (FastAPI)
 
-The system uses AI-based analysis to understand visual patterns, scene boundaries, and transitions — enabling faster and more efficient editing.
+```bash
+# From project root
+cd backend
+pip install -r ../requirements.txt
+uvicorn main:app --reload
+```
 
----
+Backend runs at: **http://127.0.0.1:8000**
 
-## 🤖 Use of AI (Antigravity)
+### 2. Start the Frontend (React)
 
-CUTLAB AI is built using advanced AI capabilities powered by **Antigravity**, which helps in:
+```bash
+# From project root
+cd frontend-ts
+npm install
+npm run dev
+```
 
-- Scene detection and segmentation  
-- Identifying unnecessary or low-value frames  
-- Suggesting optimal cuts and transitions  
-- Assisting in automated editing workflows  
-
-The AI is integrated into the processing pipeline to make intelligent decisions similar to how a human video editor would approach raw footage.
-
----
-
-## 💡 Why This Project Matters
-
-Manual video editing is time-consuming and requires careful attention to detail. CUTLAB AI aims to:
-
-- Reduce editing time significantly  
-- Improve content quality with data-driven decisions  
-- Help creators focus more on creativity than repetitive tasks  
-
-This makes it useful for:
-- Content creators
-- Video editors
-- Educational and research projects
-- Media production teams
+Frontend runs at: **http://localhost:5173**
 
 ---
 
-## 🚀 Key Features
+## 🏗️ Project Structure
 
-- AI-based scene detection  
-- Smart cut and transition suggestions  
-- Interactive web workspace  
-- Preview of AI-generated edits  
-- Modular design for future expansion  
+```
+CUTLAB AI 2/
+├── ai_engine/          # AI analysis (scene detection, cut suggestions)
+├── backend/            # FastAPI REST API
+├── frontend-ts/        # React + TypeScript frontend (NEW!)
+├── frontend/           # Legacy Streamlit app
+├── video_utils/        # Video processing utilities
+├── storage/            # Videos, timelines, database
+└── docs/               # Documentation
+```
+
+## ✨ Features
+
+### 📤 Upload
+- Drag & drop video upload
+- Automatic metadata extraction
+- Video preview
+
+### 🔎 Analysis
+- AI-powered scene detection
+- Scene timeline visualization
+- Duration bar charts
+
+### ✂️ Smart Suggestions
+- Audio-aware cut suggestions
+- Motion, silence, face detection
+- Accept/reject workflow
+
+### 📦 Export
+- JSON timeline export
+- XML (FCP) export
+- Non-destructive editing
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** HTML, CSS, JavaScript  
-- **Backend:** Python / Node.js (depending on implementation)  
-- **AI Engine:** Antigravity (AI-powered analysis)  
-- **Tools:** Git, GitHub  
+| Component | Technology |
+|-----------|------------|
+| Backend | FastAPI, SQLAlchemy, SQLite |
+| AI Engine | OpenCV, Librosa, PySceneDetect |
+| Frontend | React 19, TypeScript, Vite |
+| Styling | CSS (custom dark theme) |
+| Icons | Lucide React |
 
 ---
 
-## 🤝 Contributing
+## 📡 API Endpoints
 
-This project is open to contributions.
-
-If you'd like to improve features, fix bugs, or enhance the UI:
-
-1. Fork this repository  
-2. Create a new branch  
-3. Commit your changes  
-4. Submit a pull request  
-
-All meaningful contributions are welcome!
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/projects` | GET | List all projects |
+| `/upload-video` | POST | Upload video file |
+| `/analyze-scenes/{id}` | POST | Detect scenes |
+| `/suggest-cuts/{id}` | POST | Generate suggestions |
+| `/workspace/{id}/timeline` | GET/POST | Timeline operations |
+| `/export-timeline/{id}` | GET | Export timeline |
 
 ---
 
-## ⚙️ Installation & Setup
+## 🎨 Frontend Screenshots
 
-```bash
-# Clone the repository
-git clone https://github.com/hrishikesh2810/CUTLAB.git
+The React frontend features:
+- 🌙 Premium dark theme with gradients
+- 📊 Interactive charts and visualizations
+- 🎬 Visual timeline with zoom
+- ⚡ Real-time API integration
 
-# Navigate into the project directory
-cd CUTLAB
+---
 
-# Install backend dependencies
-pip install -r requirements.txt
+## 📝 License
 
-# (If frontend exists)
-cd frontend
-npm install
-npm start
-
-# Run backend
-python app.py
+MIT License - see LICENSE file for details.

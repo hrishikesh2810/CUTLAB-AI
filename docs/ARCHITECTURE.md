@@ -160,13 +160,13 @@ Both components use the same JSON structure:
 | Component | Technology |
 |-----------|------------|
 | AI Analysis | Python, OpenCV, Librosa |
-| Backend API | FastAPI, SQLAlchemy |
-| AI Dashboard | Streamlit |
-| Workspace Shell | Electron |
-| Workspace UI | React + TypeScript |
-| Timeline Render | CSS + React |
+| Backend API | FastAPI, SQLAlchemy, CORS |
+| Frontend | React 19 + TypeScript + Vite |
+| Styling | CSS (Custom Dark Theme) |
+| Icons | Lucide React |
+| State Management | React Context + useReducer |
 | Data Storage | SQLite, JSON files |
-| Preview Render | **Remotion** (@remotion/player) |
+| HTTP Client | Axios |
 
 ---
 

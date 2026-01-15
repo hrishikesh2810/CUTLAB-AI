@@ -1,48 +1,55 @@
-import cv2
-from scenedetect import VideoManager
-from scenedetect import SceneManager
+"""
+Scene Detection Module
+======================
+Implements precise scene detection using PySceneDetect.
+Restored to match Streamlit/Production quality.
+"""
+
+import math
+from typing import List, Dict, Any
+from scenedetect import VideoManager, SceneManager
 from scenedetect.detectors import ContentDetector
 
-def detect_scenes(video_path: str, threshold: float = 30.0):
+def detect_scenes(video_path: str) -> List[Dict[str, Any]]:
     """
-    Detects scenes in a video using PySceneDetect.
-    Returns a list of dicts with:
-    - scene_id
-    - start_time (seconds)
-    - end_time (seconds)
-    - start_frame
-    - end_frame
+    Detect scenes in a video file using ContentDetector.
+    Returns a list of scenes with start/end times and frames.
     """
-    
-    # Create a video manager point to video file
+    # Create a video manager and scene manager
     video_manager = VideoManager([video_path])
-    
-    # Construct a scene manager and add the detector
     scene_manager = SceneManager()
-    scene_manager.add_detector(ContentDetector(threshold=threshold))
     
-    # Improve processing speed by downscaling (optional)
-    video_manager.set_downscale_factor()
+    # Use ContentDetector with standard threshold (precise)
+    # Threshold 27.0 is a good default for general content
+    detector = ContentDetector(threshold=27.0, min_scene_len=15)
+    scene_manager.add_detector(detector)
     
-    # Start the video manager and perform scene detection
-    video_manager.start()
-    scene_manager.detect_scenes(frame_source=video_manager)
-    
-    # Get list of detected scenes
-    scene_list = scene_manager.get_scene_list()
-    
-    # Release resources
-    video_manager.release()
-    
-    results = []
-    for i, scene in enumerate(scene_list):
-        start, end = scene
-        results.append({
-            "scene_id": i + 1,
-            "start_time": start.get_seconds(),
-            "end_time": end.get_seconds(),
-            "start_frame": start.get_frames(),
-            "end_frame": end.get_frames()
-        })
+    try:
+        # Start video manager
+        video_manager.set_downscale_factor()
+        video_manager.start()
         
-    return results
+        # Perform detection
+        scene_manager.detect_scenes(frame_source=video_manager)
+        
+        # Get list of scenes from SceneManager
+        scene_list = scene_manager.get_scene_list()
+        
+        results = []
+        for scene in scene_list:
+            start_time = scene[0].get_seconds()
+            end_time = scene[1].get_seconds()
+            start_frame = scene[0].get_frames()
+            end_frame = scene[1].get_frames()
+            
+            results.append({
+                "start_time": float(start_time),
+                "end_time": float(end_time),
+                "start_frame": int(start_frame),
+                "end_frame": int(end_frame)
+            })
+            
+        return results
+        
+    finally:
+        video_manager.release()

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import shutil
 import os
@@ -16,6 +17,15 @@ from ai_engine import cut_suggester
 from ai_engine import timeline_builder
 
 app = FastAPI(title="CUTLAB AI Backend")
+
+# Add CORS middleware for React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize DB
 db.init_db()
@@ -131,6 +141,33 @@ async def get_project(project_id: str, db_session: Session = Depends(db.get_db))
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/video/{project_id}")
+async def stream_video(project_id: str):
+    """Stream video file for the editor."""
+    from fastapi.responses import FileResponse
+    
+    video_path = get_video_path(project_id)
+    
+    if not video_path or not os.path.exists(video_path):
+        raise HTTPException(status_code=404, detail="Video file not found")
+    
+    # Determine media type
+    ext = os.path.splitext(video_path)[1].lower()
+    media_types = {
+        '.mp4': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo',
+        '.webm': 'video/webm',
+        '.mkv': 'video/x-matroska',
+    }
+    media_type = media_types.get(ext, 'video/mp4')
+    
+    return FileResponse(
+        video_path,
+        media_type=media_type,
+        filename=os.path.basename(video_path)
+    )
 
 @app.post("/upload-video")
 async def upload_video(file: UploadFile = File(...), db_session: Session = Depends(db.get_db)):
