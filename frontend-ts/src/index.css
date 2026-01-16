@@ -10,9 +10,9 @@
   --bg-hover: #1e1e2a;
 
   /* Accent Colors */
-  --accent-primary: #ff4b4b;
-  --accent-secondary: #ff914d;
-  --accent-gradient: linear-gradient(135deg, #ff4b4b 0%, #ff914d 100%);
+  --accent-primary: #84cc16;
+  --accent-secondary: #a855f7;
+  --accent-gradient: linear-gradient(135deg, #84cc16 0%, #a855f7 100%);
   --accent-success: #00c853;
   --accent-info: #00b4d8;
   --accent-warning: #ffc107;
@@ -30,7 +30,7 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(255, 75, 75, 0.2);
+  --shadow-glow: 0 0 20px rgba(132, 204, 22, 0.2);
 
   /* Spacing */
   --space-xs: 4px;

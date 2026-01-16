@@ -56,7 +56,7 @@ function AppContent() {
             {/* Header */}
             <header className="header">
                 <div className="header-logo">
-                    <span style={{ fontSize: '1.5rem' }}>🎬</span>
+                    <img src="/assets/logo-symbol.png" alt="CUTLAB AI" style={{ height: '32px', width: 'auto' }} />
                     <h1>CUTLAB AI</h1>
                     <span className="header-subtitle">
                         Next-Gen Python-Only AI Video Editor • Audio-Aware Smart Cut Suggestions

@@ -23,11 +23,11 @@
     /* Zinc-500 */
 
     /* Brand Accents */
-    --accent: #f97316;
-    /* Orange-500 */
-    --accent-gradient: linear-gradient(135deg, #f97316 0%, #db2777 100%);
-    /* Orange to Pink */
-    --accent-glow: rgba(249, 115, 22, 0.3);
+    --accent: #84cc16;
+    /* Lime-500 */
+    --accent-gradient: linear-gradient(135deg, #84cc16 0%, #a855f7 100%);
+    /* Lime to Purple */
+    --accent-glow: rgba(132, 204, 22, 0.3);
 
     /* Functional Colors */
     --info: #3b82f6;

@@ -34,7 +34,10 @@ export function Toolbar({ video, isLoading, onImport, onDetectScenes, onExport }
     return (
         <div className="editor-toolbar">
             <div className="toolbar-left">
-                <h1 className="toolbar-title">🎬 Video Editor</h1>
+                <h1 className="toolbar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <img src="/assets/logo-symbol.png" alt="Logo" style={{ height: '24px', width: 'auto' }} />
+                    Video Editor
+                </h1>
                 {video && (
                     <span className="toolbar-filename">{video.filename}</span>
                 )}
