@@ -1,0 +1,201 @@
+/* Export Progress Popup */
+.export-progress-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: 384px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
+    /* gray-700 */
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+.export-progress-header {
+    background-color: #3f3f46;
+    /* zinc-700 */
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.progress-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+}
+
+.progress-minimize-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-minimize-btn:hover {
+    color: white;
+}
+
+.export-progress-body {
+    padding: 16px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.status-text {
+    font-size: 12px;
+    color: #d1d5db;
+    /* gray-300 */
+    margin: 0;
+}
+
+/* Scoped specifically to override global .progress-fill if present */
+.export-progress-container .percentage-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-secondary, #ff914d);
+    margin: 0;
+}
+
+/* Progress Bar */
+.export-progress-container .progress-track {
+    width: 100%;
+    height: 6px;
+    background-color: #4b5563;
+    /* gray-600 */
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.export-progress-container .progress-fill {
+    height: 100%;
+    background: var(--accent-gradient, linear-gradient(135deg, #ff4b4b 0%, #ff914d 100%));
+    transition: width 0.3s ease;
+}
+
+.export-progress-container .progress-fill.completed {
+    background: var(--accent-success, #10b981);
+}
+
+.export-progress-container .progress-fill.failed {
+    background: var(--accent-primary, #ef4444);
+}
+
+/* Info Text */
+.progress-info {
+    font-size: 11px;
+    color: #9ca3af;
+    /* gray-400 */
+    margin: 0;
+}
+
+/* Completion State */
+.completion-body {
+    text-align: center;
+    padding: 24px 16px;
+}
+
+.success-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background-color: rgba(16, 185, 129, 0.2);
+    /* emerald-500/20 */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+}
+
+.success-icon {
+    color: #10b981;
+    /* emerald-500 */
+    width: 24px;
+    height: 24px;
+}
+
+.completion-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 4px;
+}
+
+.completion-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0 0 16px;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-gradient, linear-gradient(135deg, #ff4b4b 0%, #ff914d 100%));
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3);
+}
+
+.download-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 11px;
+    margin-top: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.close-btn:hover {
+    color: white;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

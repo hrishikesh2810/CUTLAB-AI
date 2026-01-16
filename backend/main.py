@@ -15,8 +15,12 @@ from video_utils import metadata
 from ai_engine import scene_detection
 from ai_engine import cut_suggester
 from ai_engine import timeline_builder
+from smart_human import router as smart_human_router
+from export_service import router as export_router
 
 app = FastAPI(title="CUTLAB AI Backend")
+app.include_router(smart_human_router)
+app.include_router(export_router)
 
 # Add CORS middleware for React frontend
 app.add_middleware(
@@ -798,6 +802,42 @@ async def get_transitions(project_id: str):
             "transitions": manager.get_all_transitions(),
             "transition_types": manager.TRANSITION_TYPES
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# CAPTION ENDPOINTS
+# ============================================================
+
+from caption_generator import caption_generator
+
+@app.post("/generate-captions/{project_id}")
+async def generate_captions(project_id: str, db_session: Session = Depends(db.get_db)):
+    """
+    Generate captions for a video project using OpenAI Whisper.
+    """
+    try:
+        # Check if project exists
+        video_record = db_session.query(db.VideoMetadata).filter(db.VideoMetadata.project_id == project_id).first()
+        if not video_record:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        video_path = get_video_path(project_id)
+        if not video_path:
+            raise HTTPException(status_code=404, detail="Video file not found on disk")
+        
+        # Generate captions
+        captions = caption_generator.generate_captions(video_path)
+        
+        return {
+            "status": "success",
+            "project_id": project_id,
+            "captions": captions
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

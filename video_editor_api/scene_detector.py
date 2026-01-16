@@ -84,10 +84,14 @@ class SceneDetector:
             for scene in scene_list:
                 start_time = scene[0].get_seconds()
                 end_time = scene[1].get_seconds()
+                start_frame = scene[0].get_frames()
+                end_frame = scene[1].get_frames()
                 
                 scenes.append({
                     "start": float(start_time),
-                    "end": float(end_time)
+                    "end": float(end_time),
+                    "start_frame": int(start_frame),
+                    "end_frame": int(end_frame)
                 })
                 
             return scenes

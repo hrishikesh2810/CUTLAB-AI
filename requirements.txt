@@ -9,3 +9,8 @@ requests
 SQLAlchemy
 scenedetect
 librosa
+
+av
+scikit-image
+openai-whisper
+formatted-strings

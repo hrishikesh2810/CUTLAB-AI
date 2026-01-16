@@ -8,7 +8,7 @@
   --bg-tertiary: #1a1a26;
   --bg-card: #16161f;
   --bg-hover: #1e1e2a;
-  
+
   /* Accent Colors */
   --accent-primary: #ff4b4b;
   --accent-secondary: #ff914d;
@@ -16,22 +16,22 @@
   --accent-success: #00c853;
   --accent-info: #00b4d8;
   --accent-warning: #ffc107;
-  
+
   /* Text Colors */
   --text-primary: #ffffff;
   --text-secondary: #a0a0b0;
   --text-muted: #6b6b7b;
-  
+
   /* Border Colors */
   --border-primary: #2a2a3a;
   --border-accent: rgba(255, 75, 75, 0.3);
-  
+
   /* Shadows */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(255, 75, 75, 0.2);
-  
+
   /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -39,13 +39,13 @@
   --space-lg: 24px;
   --space-xl: 32px;
   --space-2xl: 48px;
-  
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  
+
   /* Transitions */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
@@ -58,7 +58,9 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
 }
@@ -268,6 +270,12 @@ body {
   flex: 1;
   padding: var(--space-xl);
   overflow-y: auto;
+}
+
+.tab-content.no-padding {
+  padding: 0;
+  overflow: hidden;
+  /* Prevent double scrollbars if Editor handles scrolling */
 }
 
 /* Cards */
@@ -749,7 +757,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-overlay {
@@ -790,6 +800,9 @@ body {
   z-index: 1001;
 }
 
+
+
+
 .toast.success {
   border-color: var(--accent-success);
 }
@@ -803,6 +816,7 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -814,12 +828,12 @@ body {
   .sidebar {
     width: 220px;
   }
-  
+
   .workspace-grid {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto auto;
   }
-  
+
   .workspace-media,
   .workspace-inspector {
     grid-row: auto;
@@ -830,15 +844,15 @@ body {
   .sidebar {
     display: none;
   }
-  
+
   .tab-nav {
     padding: var(--space-sm) var(--space-md);
   }
-  
+
   .tab-btn {
     padding: var(--space-sm) var(--space-md);
   }
-  
+
   .tab-content {
     padding: var(--space-md);
   }
@@ -850,8 +864,13 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .slide-up {
@@ -863,6 +882,7 @@ body {
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;

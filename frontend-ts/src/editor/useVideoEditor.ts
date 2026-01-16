@@ -6,15 +6,16 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { VideoFile, Scene, TimelineClip, EditorState } from './types';
+import type { VideoFile, Scene, TimelineClip, EditorState, VideoFilters } from './types';
 import * as api from './api';
+import { DEFAULT_FILTERS } from './filterUtils';
 
 const CLIP_COLORS = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
     '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'
 ];
 
-export function useVideoEditor() {
+export function useVideoEditor(projectId?: string | null) {
     const [state, setState] = useState<EditorState>({
         video: null,
         scenes: [],
@@ -26,6 +27,10 @@ export function useVideoEditor() {
         error: null,
         zoom: 50, // 50 pixels per second
         selectedClipId: null,
+        filters: DEFAULT_FILTERS,
+        captions: [],
+        isGeneratingCaptions: false,
+        showCaptions: false,
     });
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -41,12 +46,17 @@ export function useVideoEditor() {
         setState(prev => ({ ...prev, ...updates }));
     }, []);
 
+    // Set Filters
+    const setFilters = useCallback((filters: VideoFilters) => {
+        updateState({ filters });
+    }, [updateState]);
+
     // Load video from dashboard project
-    const loadDashboardProject = useCallback(async (projectId: string) => {
+    const loadDashboardProject = useCallback(async (id: string) => {
         updateState({ isLoading: true, error: null });
 
         try {
-            const project = await api.getDashboardProject(projectId);
+            const project = await api.getDashboardProject(id);
 
             if (!project || project.status !== 'success') {
                 throw new Error('Project not found');
@@ -56,13 +66,13 @@ export function useVideoEditor() {
 
             // Create video file object
             const video: VideoFile = {
-                video_id: projectId,
+                video_id: id,
                 filename: metadata.filename,
                 duration: metadata.duration,
                 fps: metadata.fps,
                 width: metadata.width,
                 height: metadata.height,
-                url: api.getDashboardVideoUrl(projectId), // Uses main backend
+                url: api.getDashboardVideoUrl(id), // Uses main backend
             };
 
             // Convert scenes to clips if available
@@ -89,9 +99,13 @@ export function useVideoEditor() {
                 duration: metadata.duration,
                 currentTime: 0,
                 isLoading: false,
+                filters: DEFAULT_FILTERS, // Reset filters on new project load
+                captions: [], // Reset captions on new project load
+                isGeneratingCaptions: false,
+                showCaptions: false,
             });
 
-            console.log('✅ Loaded dashboard project:', projectId);
+            console.log('✅ Loaded dashboard project:', id);
             return video;
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to load project';
@@ -101,38 +115,42 @@ export function useVideoEditor() {
         }
     }, [updateState]);
 
-    // Auto-load dashboard project on mount
+    // Auto-load dashboard project on changes or mount
     useEffect(() => {
-        if (hasLoadedDashboardProject.current) return;
-        hasLoadedDashboardProject.current = true;
+        if (projectId) {
+            loadDashboardProject(projectId);
+        } else if (!hasLoadedDashboardProject.current) {
+            // Only try auto-loading if no prop provided and not already done
+            hasLoadedDashboardProject.current = true;
 
-        const loadFromDashboard = async () => {
-            // Check localStorage for saved project ID
-            const savedProjectId = api.getSavedProjectId();
+            const loadFromDashboard = async () => {
+                // Check localStorage for saved project ID
+                const savedProjectId = api.getSavedProjectId();
 
-            if (savedProjectId) {
-                console.log('📂 Found saved project:', savedProjectId);
-                await loadDashboardProject(savedProjectId);
-                return;
-            }
-
-            // Otherwise, check if there are any projects in the dashboard
-            try {
-                const { projects } = await api.getDashboardProjects();
-
-                if (projects && projects.length > 0) {
-                    // Load the most recent project (first in list)
-                    const latestProject = projects[0];
-                    console.log('📂 Loading latest project:', latestProject.project_id);
-                    await loadDashboardProject(latestProject.project_id);
+                if (savedProjectId) {
+                    console.log('📂 Found saved project:', savedProjectId);
+                    await loadDashboardProject(savedProjectId);
+                    return;
                 }
-            } catch (error) {
-                console.log('No dashboard projects found');
-            }
-        };
 
-        loadFromDashboard();
-    }, [loadDashboardProject]);
+                // Otherwise, check if there are any projects in the dashboard
+                try {
+                    const { projects } = await api.getDashboardProjects();
+
+                    if (projects && projects.length > 0) {
+                        // Load the most recent project (first in list)
+                        const latestProject = projects[0];
+                        console.log('📂 Loading latest project:', latestProject.project_id);
+                        await loadDashboardProject(latestProject.project_id);
+                    }
+                } catch (error) {
+                    console.log('No dashboard projects found');
+                }
+            };
+
+            loadFromDashboard();
+        }
+    }, [projectId, loadDashboardProject]);
 
     // Import video (upload new)
     const importVideo = useCallback(async (file: File) => {
@@ -161,6 +179,10 @@ export function useVideoEditor() {
                 clips: [],
                 currentTime: 0,
                 isLoading: false,
+                filters: DEFAULT_FILTERS,
+                captions: [], // Reset captions on new import
+                isGeneratingCaptions: false,
+                showCaptions: false,
             });
 
             return video;
@@ -275,6 +297,39 @@ export function useVideoEditor() {
         }
     }, [loadDashboardProject]);
 
+    // Generate Captions
+    const generateCaptions = useCallback(async () => {
+        if (!state.video) return;
+
+        updateState({ isGeneratingCaptions: true, error: null });
+
+        try {
+            const response = await api.generateCaptions(state.video.video_id);
+            updateState({
+                captions: response.captions,
+                isGeneratingCaptions: false,
+                showCaptions: true // Auto-show after generation
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Caption generation failed';
+            updateState({ isGeneratingCaptions: false, error: message });
+        }
+    }, [state.video, updateState]);
+
+    // Toggle Captions
+    const toggleCaptions = useCallback(() => {
+        updateState({ showCaptions: !state.showCaptions });
+    }, [state.showCaptions, updateState]);
+
+    // Update Caption
+    const updateCaption = useCallback((index: number, text: string) => {
+        const newCaptions = [...state.captions];
+        if (newCaptions[index]) {
+            newCaptions[index] = { ...newCaptions[index], text };
+            updateState({ captions: newCaptions });
+        }
+    }, [state.captions, updateState]);
+
     return {
         state,
         videoRef,
@@ -289,5 +344,9 @@ export function useVideoEditor() {
         clearError,
         loadDashboardProject,
         reloadFromDashboard,
+        setFilters,
+        generateCaptions,
+        toggleCaptions,
+        updateCaption,
     };
 }

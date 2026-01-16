@@ -30,6 +30,22 @@ export interface TimelineClip {
     track: number;
 }
 
+export interface VideoFilters {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    blur: number;
+    grayscale: number;
+    sepia: number;
+    hueRotate: number;
+}
+
+export interface Caption {
+    start: number;
+    end: number;
+    text: string;
+}
+
 export interface EditorState {
     video: VideoFile | null;
     scenes: Scene[];
@@ -41,4 +57,8 @@ export interface EditorState {
     error: string | null;
     zoom: number;  // pixels per second
     selectedClipId: string | null;
+    filters: VideoFilters;
+    captions: Caption[];
+    isGeneratingCaptions: boolean;
+    showCaptions: boolean;
 }

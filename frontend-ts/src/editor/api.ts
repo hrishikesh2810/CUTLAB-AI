@@ -202,10 +202,43 @@ export function getSavedProjectId(): string | null {
 /**
  * Check if a project exists in the dashboard.
  */
+// ... (previous code)
+
+/**
+ * Check if a project exists in the dashboard.
+ */
 export async function checkDashboardProject(projectId: string): Promise<DashboardProjectResponse | null> {
     try {
         return await getDashboardProject(projectId);
     } catch {
         return null;
     }
+}
+
+// =========================================================================
+// CAPTION API
+// =========================================================================
+
+import type { Caption } from './types';
+
+export interface CaptionResponse {
+    status: string;
+    project_id: string;
+    captions: Caption[];
+}
+
+/**
+ * Generate captions using OpenAI Whisper (Main Backend)
+ */
+export async function generateCaptions(projectId: string): Promise<CaptionResponse> {
+    const response = await fetch(`${MAIN_API}/generate-captions/${projectId}`, {
+        method: 'POST',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Caption generation failed');
+    }
+
+    return response.json();
 }

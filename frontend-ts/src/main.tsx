@@ -2,6 +2,7 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { VideoEditor } from './editor'
+import { SmartHumanEffectsProvider } from './context/SmartHumanEffectsContext'
 import './index.css'
 
 function Root() {
@@ -55,6 +56,8 @@ function Root() {
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <Root />
+        <SmartHumanEffectsProvider>
+            <Root />
+        </SmartHumanEffectsProvider>
     </StrictMode>,
 )

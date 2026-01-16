@@ -115,6 +115,12 @@ class TimelineBuilder:
                 "source_end": end
             }
             
+            # Add frame info if available
+            if "start_frame" in scene:
+                clip["start_frame"] = scene["start_frame"]
+            if "end_frame" in scene:
+                clip["end_frame"] = scene["end_frame"]
+            
             clips.append(clip)
         
         return {"clips": clips}

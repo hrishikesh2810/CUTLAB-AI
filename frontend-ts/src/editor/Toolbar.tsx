@@ -4,7 +4,7 @@
  * Top bar with action buttons: Import Video, Detect Scenes
  */
 
-import { Upload, Scan, Loader2 } from 'lucide-react';
+import { Upload, Scan, Loader2, Download } from 'lucide-react';
 import { useRef } from 'react';
 import type { VideoFile } from './types';
 
@@ -13,9 +13,10 @@ interface ToolbarProps {
     isLoading: boolean;
     onImport: (file: File) => void;
     onDetectScenes: () => void;
+    onExport: () => void;
 }
 
-export function Toolbar({ video, isLoading, onImport, onDetectScenes }: ToolbarProps) {
+export function Toolbar({ video, isLoading, onImport, onDetectScenes, onExport }: ToolbarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = () => {
@@ -75,6 +76,16 @@ export function Toolbar({ video, isLoading, onImport, onDetectScenes }: ToolbarP
                         <Scan size={18} />
                     )}
                     Detect Scenes
+                </button>
+
+                {/* Export Button */}
+                <button
+                    className="toolbar-btn action-tint"
+                    onClick={onExport}
+                    disabled={!video || isLoading}
+                >
+                    <Download size={18} />
+                    Export
                 </button>
             </div>
         </div>

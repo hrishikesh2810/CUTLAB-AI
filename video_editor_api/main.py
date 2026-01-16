@@ -145,6 +145,9 @@ async def detect_scenes(
     - method: "content" (standard) or "adaptive" (better for fast motion/shake)
     - preset: Optional preset ("music_video", "narrative", "documentary", "vlog")
     
+    Returns:
+    - scenes: List of scenes with start/end times (seconds) and frame indices.
+    
     Presets override other parameters:
     - music_video: Sensitive (threshold=20.0, min=0.3s)
     - narrative: Standard (threshold=27.0, min=1.0s)  

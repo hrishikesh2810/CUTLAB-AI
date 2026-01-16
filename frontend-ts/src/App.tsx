@@ -1,12 +1,13 @@
 import {
     Upload, Search, Scissors, Package,
-    Film, Clock, Layers, Volume2
+    Film, Clock, Layers, Volume2, Edit
 } from 'lucide-react';
 import { ProjectProvider, useProject } from './store/ProjectContext';
 import { UploadPage } from './pages/Upload';
 import { AnalysisPage } from './pages/Analysis';
 import { SuggestionsPage } from './pages/Suggestions';
 import { ExportPage } from './pages/Export';
+import { VideoEditor } from './editor/VideoEditor';
 import type { TabType } from './types';
 import './index.css';
 
@@ -14,6 +15,7 @@ const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'upload', label: 'Upload', icon: <Upload size={18} /> },
     { id: 'analysis', label: 'Analysis', icon: <Search size={18} /> },
     { id: 'suggestions', label: 'Suggestions', icon: <Scissors size={18} /> },
+    { id: 'editor', label: 'Editor', icon: <Edit size={18} /> },
     { id: 'export', label: 'Export', icon: <Package size={18} /> },
 ];
 
@@ -40,6 +42,8 @@ function AppContent() {
                 return <AnalysisPage />;
             case 'suggestions':
                 return <SuggestionsPage />;
+            case 'editor':
+                return <VideoEditor projectId={projectId} />;
             case 'export':
                 return <ExportPage />;
             default:
@@ -156,7 +160,7 @@ function AppContent() {
                     </nav>
 
                     {/* Tab Content */}
-                    <main className="tab-content">
+                    <main className={`tab-content ${activeTab === 'editor' ? 'no-padding' : ''}`}>
                         {renderPage()}
                     </main>
                 </div>

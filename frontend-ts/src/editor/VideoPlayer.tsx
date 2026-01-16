@@ -5,18 +5,31 @@
  */
 
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
-import { useRef, useEffect, useCallback } from 'react';
-import type { VideoFile } from './types';
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
+import type { VideoFile, VideoFilters, Caption } from './types';
+import { getFilterString } from './filterUtils';
+import { useSmartHumanEffects } from '../context/SmartHumanEffectsContext';
 
 interface VideoPlayerProps {
     video: VideoFile | null;
     currentTime: number;
     isPlaying: boolean;
+    filters?: VideoFilters;
+    captions?: Caption[];
+    showCaptions?: boolean;
     onTimeUpdate: (time: number) => void;
     onTogglePlay: () => void;
     onSeek: (time: number) => void;
     setVideoRef: (ref: HTMLVideoElement | null) => void;
 }
+
+type AISegment = {
+    start: number;
+    end: number;
+    face_detected: boolean;
+    motion_score: number;
+    face_box: { x: number; y: number; w: number; h: number };
+};
 
 function formatTimecode(seconds: number): string {
     const mins = Math.floor(seconds / 60);
@@ -29,12 +42,99 @@ export function VideoPlayer({
     video,
     currentTime,
     isPlaying,
+    filters,
+    captions = [],
+    showCaptions = false,
     onTimeUpdate,
     onTogglePlay,
     onSeek,
     setVideoRef,
 }: VideoPlayerProps) {
     const videoElementRef = useRef<HTMLVideoElement>(null);
+    const { state } = useSmartHumanEffects();
+    const [aiSegments, setAiSegments] = useState<AISegment[]>([]);
+
+    // Load Smart Human metadata
+    useEffect(() => {
+        if (!video?.video_id) return;
+
+        fetch(`http://127.0.0.1:8000/ai/mediapipe/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                video_id: video.video_id,
+                frame_interval: 10,
+                segment_duration: 1.0
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.segments) {
+                    setAiSegments(data.segments);
+                }
+            })
+            .catch(err => console.error("Failed to load AI metadata:", err));
+    }, [video?.video_id]);
+
+    // Apply effects dynamically
+    const effectStyles = useMemo(() => {
+        const filterList: string[] = [];
+        let transformStr = "";
+
+        // Base filters from FiltersPanel
+        if (filters) {
+            filterList.push(getFilterString(filters));
+        }
+
+        if (!video) return { filter: filterList.join(" ") };
+
+        if (aiSegments.length > 0) {
+            const seg = aiSegments.find(s => currentTime >= s.start && currentTime < s.end);
+            if (seg) {
+
+                // Face Focus
+                if (state.faceFocus.enabled && seg.face_detected) {
+                    const intensity = state.faceFocus.intensity / 100;
+                    const zoom = 1 + (intensity * 0.2); // Up to 1.2x
+                    const brightness = 1 + (intensity * 0.3); // Up to 1.3x
+                    filterList.push(`brightness(${brightness})`);
+                    transformStr += `scale(${zoom}) `;
+
+                    // If Auto Reframe is also enabled, it will take over transform
+                    if (state.autoReframe.enabled) {
+                        const { x, y, w, h } = seg.face_box;
+                        const shiftX = (0.5 - (x + w / 2)) * 100 * intensity;
+                        const shiftY = (0.5 - (y + h / 2)) * 100 * intensity;
+                        transformStr = `scale(${zoom}) translate(${shiftX}%, ${shiftY}%) `;
+                    }
+                }
+
+                // Background Blur (simplified CSS approximation)
+                if (state.backgroundBlur.enabled && seg.face_detected) {
+                    const blur = (state.backgroundBlur.intensity / 100) * 4;
+                    filterList.push(`blur(${blur}px)`);
+                }
+
+                // Motion Emphasis
+                if (state.motionEmphasis.enabled && seg.motion_score > 0.3) {
+                    const contrast = 1 + (state.motionEmphasis.intensity / 100) * 0.5;
+                    filterList.push(`contrast(${contrast})`);
+                }
+            }
+        }
+
+        return {
+            filter: filterList.join(" "),
+            transform: transformStr,
+            transition: 'all 0.3s ease-out'
+        };
+    }, [currentTime, aiSegments, state, filters, video]);
+
+    // Get active caption
+    const activeCaption = useMemo(() => {
+        if (!showCaptions || !captions.length) return null;
+        return captions.find(c => currentTime >= c.start && currentTime <= c.end);
+    }, [captions, showCaptions, currentTime]);
 
     // Set ref on mount and whenever it changes
     useEffect(() => {
@@ -134,22 +234,32 @@ export function VideoPlayer({
     return (
         <div className="video-player">
             {/* Video Container */}
-            <div className="video-container">
+            <div className="video-container overflow-hidden">
                 {video?.url ? (
-                    <video
-                        ref={videoElementRef}
-                        src={video.url}
-                        onTimeUpdate={handleTimeUpdate}
-                        onEnded={handleEnded}
-                        onLoadedMetadata={() => {
-                            // Ensure ref is set after metadata loads
-                            if (videoElementRef.current) {
-                                setVideoRef(videoElementRef.current);
-                            }
-                        }}
-                        playsInline
-                        preload="auto"
-                    />
+                    <>
+                        <video
+                            ref={videoElementRef}
+                            src={video.url}
+                            style={effectStyles}
+                            onTimeUpdate={handleTimeUpdate}
+                            onEnded={handleEnded}
+                            onLoadedMetadata={() => {
+                                // Ensure ref is set after metadata loads
+                                if (videoElementRef.current) {
+                                    setVideoRef(videoElementRef.current);
+                                }
+                            }}
+                            playsInline
+                            preload="auto"
+                            className="w-full h-full object-contain"
+                        />
+                        {/* Caption Overlay */}
+                        {activeCaption && (
+                            <div className="caption-overlay">
+                                <span className="caption-text-overlay">{activeCaption.text}</span>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="video-placeholder">
                         <Play size={64} strokeWidth={1} />

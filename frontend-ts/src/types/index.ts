@@ -134,4 +134,4 @@ export interface SequenceSettings {
     fps: number;
 }
 
-export type TabType = 'upload' | 'analysis' | 'suggestions' | 'export';
+export type TabType = 'upload' | 'analysis' | 'suggestions' | 'editor' | 'export';

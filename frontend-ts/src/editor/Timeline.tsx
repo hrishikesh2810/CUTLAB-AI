@@ -6,12 +6,13 @@
  */
 
 import { useRef, useMemo } from 'react';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, Type } from 'lucide-react';
 import { TimelineClip } from './TimelineClip';
-import type { TimelineClip as TimelineClipType } from './types';
+import type { TimelineClip as TimelineClipType, Caption } from './types';
 
 interface TimelineProps {
     clips: TimelineClipType[];
+    captions?: Caption[];
     duration: number;
     currentTime: number;
     zoom: number;
@@ -29,6 +30,7 @@ function formatTimeMarker(seconds: number): string {
 
 export function Timeline({
     clips,
+    captions = [],
     duration,
     currentTime,
     zoom,
@@ -122,27 +124,50 @@ export function Timeline({
                     ))}
                 </div>
 
-                {/* Track */}
+                {/* Tracks Container */}
                 <div
                     ref={trackRef}
-                    className="timeline-track"
+                    className="tracks-container"
                     style={{ width: `${timelineWidth}px` }}
                     onClick={handleTrackClick}
                 >
-                    <div className="timeline-track-bg" />
+                    {/* Video Track */}
+                    <div className="timeline-track video-track">
+                        <div className="track-label">Video</div>
+                        <div className="timeline-track-bg" />
+                        {clips.map(clip => (
+                            <TimelineClip
+                                key={clip.clip_id}
+                                clip={clip}
+                                pixelsPerSecond={zoom}
+                                isSelected={clip.clip_id === selectedClipId}
+                                onClick={() => onClipClick(clip.clip_id)}
+                            />
+                        ))}
+                    </div>
 
-                    {/* Clips */}
-                    {clips.map(clip => (
-                        <TimelineClip
-                            key={clip.clip_id}
-                            clip={clip}
-                            pixelsPerSecond={zoom}
-                            isSelected={clip.clip_id === selectedClipId}
-                            onClick={() => onClipClick(clip.clip_id)}
-                        />
-                    ))}
+                    {/* Captions Track */}
+                    {captions.length > 0 && (
+                        <div className="timeline-track caption-track">
+                            <div className="track-label"><Type size={12} /> Text</div>
+                            <div className="timeline-track-bg" />
+                            {captions.map((caption, idx) => (
+                                <div
+                                    key={idx}
+                                    className="timeline-caption-clip"
+                                    style={{
+                                        left: `${caption.start * zoom}px`,
+                                        width: `${(caption.end - caption.start) * zoom}px`
+                                    }}
+                                    title={caption.text}
+                                >
+                                    <span className="caption-text-preview">{caption.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* Playhead */}
+                    {/* Playhead (Global) */}
                     <div
                         className="playhead"
                         style={{ left: `${playheadPosition}px` }}
