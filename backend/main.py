@@ -17,10 +17,19 @@ from ai_engine import cut_suggester
 from ai_engine import timeline_builder
 from smart_human import router as smart_human_router
 from export_service import router as export_router
+from routers import projects, ai_content, fonts
+from database import init_db as init_pg_db
 
 app = FastAPI(title="CUTLAB AI Backend")
 app.include_router(smart_human_router)
 app.include_router(export_router)
+app.include_router(projects.router)
+app.include_router(ai_content.router)
+app.include_router(fonts.router)
+
+@app.on_event("startup")
+async def on_startup():
+    await init_pg_db()
 
 # Add CORS middleware for React frontend
 app.add_middleware(

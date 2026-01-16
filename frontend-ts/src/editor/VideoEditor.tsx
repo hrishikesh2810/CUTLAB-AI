@@ -21,6 +21,7 @@ import { Toolbar } from './Toolbar';
 import { EditorSidebar } from './EditorSidebar';
 import { VideoPlayer } from './VideoPlayer';
 import { Timeline } from './Timeline';
+import { ResizeHandle } from '../components/ResizeHandle';
 
 import { ExportModal } from '../components/ExportModal';
 import { ExportProgress } from '../components/ExportProgress';
@@ -28,6 +29,7 @@ import { useSmartHumanEffects } from '../context/SmartHumanEffectsContext';
 import { AlertCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import './VideoEditor.css';
+import type { CaptionSettings } from './types';
 
 interface VideoEditorProps {
     projectId?: string | null;
@@ -49,10 +51,19 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
         generateCaptions,
         toggleCaptions,
         updateCaption,
+        setCaptionSettings,
+        runContentAnalysis,
+        toggleAIContentEffect,
+        addTextOverlay,
+        updateTextOverlay,
+        removeTextOverlay
     } = useVideoEditor(projectId);
 
     const { state: smartHumanState } = useSmartHumanEffects();
     const [isExportOpen, setIsExportOpen] = useState(false);
+
+    // AI/UI State
+    const [sidebarWidth, setSidebarWidth] = useState(300);
 
     // Export State
     const [exportStatus, setExportStatus] = useState<'idle' | 'processing' | 'completed' | 'failed'>('idle');
@@ -83,6 +94,8 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
     const handleSceneClick = (scene: { start: number; end: number }) => {
         seekTo(scene.start);
     };
+
+
 
     // Combined Source of Truth for Export
     const fullEditorState = {
@@ -155,8 +168,6 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
 
     return (
         <div className="video-editor">
-            {/* ... (existing JSX) */}
-
             {/* Toolbar */}
             <Toolbar
                 video={state.video}
@@ -166,21 +177,39 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
                 onExport={() => setIsExportOpen(true)}
             />
 
-            {/* ... (Main Content, Sidebar, Player, Timeline) */}
+            {/* Main Content, Sidebar, Player, Timeline */}
             <div className="editor-main">
                 {/* Left: Sidebar (Media & Filters) */}
                 <EditorSidebar
+                    width={sidebarWidth}
                     video={state.video}
                     scenes={state.scenes}
                     filters={state.filters}
                     captions={state.captions}
+                    textOverlays={state.textOverlays}
                     isGeneratingCaptions={state.isGeneratingCaptions}
                     showCaptions={state.showCaptions}
+                    captionSettings={state.captionSettings}
+                    aiContentAnalysis={state.aiContentAnalysis}
+                    aiContentEffects={state.aiContentEffects}
                     onSceneClick={handleSceneClick}
                     onUpdateFilters={setFilters}
                     onGenerateCaptions={generateCaptions}
                     onToggleCaptions={toggleCaptions}
                     onUpdateCaption={updateCaption}
+                    onUpdateCaptionSettings={(styleUpdates) => setCaptionSettings({ style: { ...state.captionSettings.style, ...styleUpdates } })}
+                    onToggleAIContentEffect={toggleAIContentEffect}
+                    onRunContentAnalysis={runContentAnalysis}
+                    onAddTextOverlay={addTextOverlay}
+                    onUpdateTextOverlay={updateTextOverlay}
+                    onRemoveTextOverlay={removeTextOverlay}
+                />
+
+                <ResizeHandle
+                    initialWidth={sidebarWidth}
+                    onResize={setSidebarWidth}
+                    minWidth={280}
+                    maxWidth={600}
                 />
 
                 {/* Center: Video Player */}
@@ -190,7 +219,13 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
                     isPlaying={state.isPlaying}
                     filters={state.filters}
                     captions={state.captions}
+                    textOverlays={state.textOverlays}
                     showCaptions={state.showCaptions}
+                    captionSettings={state.captionSettings}
+                    aiContentAnalysis={state.aiContentAnalysis}
+                    aiContentEffects={state.aiContentEffects}
+                    onUpdateCaption={updateCaption}
+                    onUpdateTextOverlay={updateTextOverlay}
                     onTimeUpdate={onTimeUpdate}
                     onTogglePlay={togglePlay}
                     onSeek={seekTo}
@@ -215,7 +250,6 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
             <ExportModal
                 isOpen={isExportOpen}
                 onClose={() => setIsExportOpen(false)}
-                video_id={state.video?.video_id || ''}
                 editorState={fullEditorState}
                 onStartExport={handleStartExport}
             />
@@ -231,8 +265,6 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
                     onClose={() => setExportStatus('idle')}
                 />
             )}
-
-            {/* ... (Error Toast, Loading Overlay) */}
 
             {/* Error Toast */}
             {state.error && (

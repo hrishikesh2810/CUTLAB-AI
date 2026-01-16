@@ -1,0 +1,173 @@
+.ai-content-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.beta-tag {
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+}
+
+.analysis-section {
+    margin-bottom: 24px;
+    border-bottom: 1px solid #27272a;
+    padding-bottom: 16px;
+}
+
+.analysis-empty {
+    text-align: center;
+    padding: 20px;
+    background: #18181b;
+    border-radius: 8px;
+    border: 1px dashed #3f3f46;
+}
+
+.sub-text {
+    font-size: 12px;
+    color: #71717a;
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.analyze-btn {
+    background: #84cc16;
+    color: black;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 auto;
+    transition: all 0.2s;
+}
+
+.analyze-btn:disabled {
+    background: #3f3f46;
+    color: #a1a1aa;
+    cursor: not-allowed;
+}
+
+.analyze-btn:hover:not(:disabled) {
+    background: #65a30d;
+}
+
+.error-text {
+    color: #ef4444;
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+.analysis-complete {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(132, 204, 22, 0.1);
+    border: 1px solid rgba(132, 204, 22, 0.2);
+    border-radius: 6px;
+}
+
+.success-badge {
+    color: #84cc16;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.reanalyze-btn {
+    background: transparent;
+    border: none;
+    color: #71717a;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Effect Cards */
+.effects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.ai-effect-card {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s;
+}
+
+.ai-effect-card.active {
+    border-color: #84cc16;
+    background: rgba(132, 204, 22, 0.05);
+}
+
+.effect-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.effect-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #e4e4e7;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.effect-description {
+    font-size: 12px;
+    color: #a1a1aa;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.effect-stats {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #84cc16;
+    background: #000;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}

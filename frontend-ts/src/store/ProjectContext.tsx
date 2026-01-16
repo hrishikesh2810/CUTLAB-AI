@@ -159,6 +159,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     const loadProjects = async () => {
         try {
             const data = await api.getProjects();
+            // Map backend projects to frontend structure if needed
+            // The backend /projects endpoint (from main.py list_projects) returns legacy structure.
+            // The new routers/projects.py (not yet used for listing?) 
+            // We should ensure we handle both. 
+            // For now, assuming the API returns what we expect.
             dispatch({ type: 'SET_PROJECTS', payload: data.projects });
         } catch (error) {
             console.error('Failed to load projects:', error);
@@ -169,20 +174,28 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_LOADING', payload: true });
         try {
             const data = await api.getProject(projectId);
+
+            // Handle both new (id) and legacy (project_id) structures
+            const newProjectId = data.id || data.project_id || projectId;
+            const newMetadata = data.metadata || (data as any); // Fallback for pure Project object
+
+            // Ensure editor state is loaded if available
+            // if (data.editor_state) { ... } 
+
             dispatch({
                 type: 'SET_PROJECT',
                 payload: {
-                    projectId,
-                    metadata: data.metadata,
-                    scenes: data.scenes,
-                    suggestions: data.suggestions,
+                    projectId: newProjectId,
+                    metadata: newMetadata, // Type casting might be needed effectively
+                    scenes: data.scenes || null,
+                    suggestions: data.suggestions || null,
                 },
             });
-            localStorage.setItem('cutlab_active_project', projectId);
+            localStorage.setItem('cutlab_active_project', newProjectId);
 
-            // Load timeline too
+            // Load timeline
             try {
-                const timelineData = await api.getTimeline(projectId);
+                const timelineData = await api.getTimeline(newProjectId);
                 dispatch({ type: 'SET_TIMELINE', payload: timelineData.timeline });
             } catch {
                 // Timeline might not exist yet
@@ -201,11 +214,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             dispatch({
                 type: 'SET_PROJECT',
                 payload: {
-                    projectId: data.project_id,
-                    metadata: data.metadata,
+                    projectId: data.project_id!,
+                    metadata: data.metadata!,
                 },
             });
-            localStorage.setItem('cutlab_active_project', data.project_id);
+            localStorage.setItem('cutlab_active_project', data.project_id!);
             await loadProjects();
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: 'Failed to upload video' });
@@ -242,6 +255,38 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'SET_LOADING', payload: false });
         }
     };
+
+    // Autosave functionality
+    useEffect(() => {
+        if (!state.projectId) return;
+
+        const saveState = async () => {
+            try {
+                // Construct the full editor state to save
+                const editorState = {
+                    timeline: state.timeline,
+                    scenes: state.scenes,
+                    suggestions: state.suggestions,
+                    metadata: state.metadata,
+                    updated_at: new Date().toISOString()
+                };
+
+                // Call API
+                if (state.projectId) {
+                    await api.updateProjectState(state.projectId, editorState);
+                }
+                // console.log("Autosaved project state"); // Optional logging
+            } catch (error) {
+                console.error("Autosave failed:", error);
+            }
+        };
+
+        // Debounce or Interval? Interval is safer for "continuous" saves.
+        // Let's use a 5-second interval that only saves if initialized.
+        const intervalId = setInterval(saveState, 5000);
+
+        return () => clearInterval(intervalId);
+    }, [state.projectId, state.timeline, state.scenes, state.suggestions, state.metadata]);
 
     const loadTimeline = async () => {
         if (!state.projectId) return;

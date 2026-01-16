@@ -41,13 +41,16 @@ class EffectsPreviewRequest(BaseModel):
 # Helper utilities
 # ---------------------------------------------------------------------------
 def _get_video_path(video_id: str) -> str:
-    """Retrieve the absolute path of an uploaded video from the global video_store.
-    The video_store lives in backend/main.py – we import it lazily to avoid circular imports.
-    """
-    from main import video_store  # type: ignore
-    if video_id not in video_store:
-        raise HTTPException(status_code=404, detail=f"Video not found: {video_id}")
-    return video_store[video_id]["path"]
+    """Helper to find video file path for a project."""
+    import os
+    video_dir = "storage/videos"
+    if not os.path.exists(video_dir):
+        return None
+        
+    for f in os.listdir(video_dir):
+        if f.startswith(video_id):
+            return os.path.join(video_dir, f)
+    return None
 
 def _extract_face_bbox(face_detection_result, image_width: int, image_height: int) -> Dict[str, float]:
     """Convert MediaPipe normalized bounding box to a dict with normalized coordinates.

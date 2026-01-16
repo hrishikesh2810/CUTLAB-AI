@@ -9,13 +9,22 @@ export interface ProjectMetadata {
 }
 
 export interface Project {
-    project_id: string;
-    filename: string;
-    duration: number;
-    fps: number;
-    width: number;
-    height: number;
-    has_audio: boolean;
+    id: string; // Backend uses UUID 'id'
+    project_id?: string; // Legacy support if needed
+    name: string;
+    video_id?: string;
+    user_id?: string;
+    editor_state: Record<string, any>; // Flexible JSONB state
+    created_at?: string;
+    updated_at?: string;
+
+    // Legacy mapping (optional)
+    filename?: string;
+    duration?: number;
+    fps?: number;
+    width?: number;
+    height?: number;
+    has_audio?: boolean;
 }
 
 // Scene Types
@@ -93,12 +102,11 @@ export interface ProjectsResponse {
     projects: Project[];
 }
 
-export interface ProjectResponse {
-    status: string;
-    project_id: string;
-    metadata: ProjectMetadata;
-    scenes: Scene[] | null;
-    suggestions: CutSuggestion[] | null;
+export interface ProjectResponse extends Project {
+    // Legacy support fields needed for ProjectContext
+    metadata?: ProjectMetadata;
+    scenes?: Scene[] | null;
+    suggestions?: CutSuggestion[] | null;
 }
 
 export interface UploadResponse {

@@ -242,3 +242,27 @@ export async function generateCaptions(projectId: string): Promise<CaptionRespon
 
     return response.json();
 }
+
+/**
+ * AI Content Analysis (Main Backend)
+ */
+export async function analyzeContent(data: {
+    captions: Caption[];
+    timeline: any[];
+    video_duration: number;
+}): Promise<any> {
+    const response = await fetch(`${MAIN_API}/ai/content/analyze`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Content analysis failed');
+    }
+
+    return response.json();
+}

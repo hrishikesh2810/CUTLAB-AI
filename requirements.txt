@@ -15,3 +15,8 @@ scikit-image
 openai-whisper
 formatted-strings
 mediapipe
+
+psycopg2-binary
+asyncpg
+alembic
+sqlmodel

@@ -8,7 +8,7 @@ import React from 'react';
 import { RotateCcw, Zap, X } from 'lucide-react';
 import type { VideoFilters } from './types';
 import { PRESETS, DEFAULT_FILTERS } from './filterUtils';
-import './VideoEditor.css'; // Reusing editor styles, but we will add more specific ones
+import './FiltersPanel.css';
 
 interface FiltersPanelProps {
     filters: VideoFilters;

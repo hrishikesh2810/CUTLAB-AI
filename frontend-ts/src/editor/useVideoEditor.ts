@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { VideoFile, Scene, TimelineClip, EditorState, VideoFilters } from './types';
+import type { VideoFile, Scene, TimelineClip, EditorState, VideoFilters, TextOverlay, Caption } from './types';
 import * as api from './api';
 import { DEFAULT_FILTERS } from './filterUtils';
 
@@ -29,8 +29,28 @@ export function useVideoEditor(projectId?: string | null) {
         selectedClipId: null,
         filters: DEFAULT_FILTERS,
         captions: [],
+        textOverlays: [],
         isGeneratingCaptions: false,
         showCaptions: false,
+        captionSettings: {
+            style: {
+                fontFamily: 'Inter',
+                fontSize: 24,
+                color: '#ffffff',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                fontWeight: 'normal',
+                fontStyle: 'normal',
+            },
+            position: { x: 50, y: 90 },
+        },
+        aiContentAnalysis: null,
+        aiContentEffects: {
+            smartJumpCuts: true,
+            highlightMoments: true,
+            engagementBoost: false,
+            captionPunchUp: true,
+            autoIntroTrim: false,
+        },
     });
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -50,6 +70,41 @@ export function useVideoEditor(projectId?: string | null) {
     const setFilters = useCallback((filters: VideoFilters) => {
         updateState({ filters });
     }, [updateState]);
+
+    // Set Caption Settings
+    const setCaptionSettings = useCallback((settings: Partial<EditorState['captionSettings']>) => {
+        setState(prev => ({
+            ...prev,
+            captionSettings: { ...prev.captionSettings, ...settings }
+        }));
+    }, []);
+
+    // Add Text Overlay
+    const addTextOverlay = useCallback((text: string = 'New Text') => {
+        const newOverlay: TextOverlay = {
+            id: crypto.randomUUID(),
+            text,
+            start: state.currentTime,
+            end: state.currentTime + 3, // Default 3 seconds
+            style: { ...state.captionSettings.style }, // Inherit current style
+            position: { x: 50, y: 50 }, // Center
+        };
+        updateState({ textOverlays: [...state.textOverlays, newOverlay] });
+    }, [state.currentTime, state.captionSettings.style, state.textOverlays, updateState]);
+
+    // Update Text Overlay
+    const updateTextOverlay = useCallback((id: string, updates: Partial<TextOverlay>) => {
+        const newOverlays = state.textOverlays.map(o =>
+            o.id === id ? { ...o, ...updates } : o
+        );
+        updateState({ textOverlays: newOverlays });
+    }, [state.textOverlays, updateState]);
+
+    // Remove Text Overlay
+    const removeTextOverlay = useCallback((id: string) => {
+        updateState({ textOverlays: state.textOverlays.filter(o => o.id !== id) });
+    }, [state.textOverlays, updateState]);
+
 
     // Load video from dashboard project
     const loadDashboardProject = useCallback(async (id: string) => {
@@ -321,14 +376,40 @@ export function useVideoEditor(projectId?: string | null) {
         updateState({ showCaptions: !state.showCaptions });
     }, [state.showCaptions, updateState]);
 
-    // Update Caption
-    const updateCaption = useCallback((index: number, text: string) => {
+    const updateCaption = useCallback((index: number, updates: Partial<Caption>) => {
         const newCaptions = [...state.captions];
         if (newCaptions[index]) {
-            newCaptions[index] = { ...newCaptions[index], text };
+            newCaptions[index] = { ...newCaptions[index], ...updates };
             updateState({ captions: newCaptions });
         }
     }, [state.captions, updateState]);
+
+    const runContentAnalysis = useCallback(async () => {
+        if (!state.video) return;
+        updateState({ isLoading: true, error: null });
+
+        try {
+            const result = await api.analyzeContent({
+                captions: state.captions,
+                timeline: state.clips,
+                video_duration: state.duration
+            });
+            updateState({ aiContentAnalysis: result, isLoading: false });
+        } catch (error) {
+            console.error("Content analysis failed:", error);
+            updateState({ isLoading: false, error: "Failed to analyze content." });
+        }
+    }, [state.video, state.captions, state.clips, state.duration, updateState]);
+
+    const toggleAIContentEffect = useCallback((effect: keyof EditorState['aiContentEffects']) => {
+        setState(prev => ({
+            ...prev,
+            aiContentEffects: {
+                ...prev.aiContentEffects,
+                [effect]: !prev.aiContentEffects[effect]
+            }
+        }));
+    }, []);
 
     return {
         state,
@@ -348,5 +429,11 @@ export function useVideoEditor(projectId?: string | null) {
         generateCaptions,
         toggleCaptions,
         updateCaption,
+        setCaptionSettings,
+        runContentAnalysis,
+        toggleAIContentEffect,
+        addTextOverlay,
+        updateTextOverlay,
+        removeTextOverlay,
     };
 }

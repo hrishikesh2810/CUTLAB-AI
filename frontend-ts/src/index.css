@@ -224,6 +224,7 @@ body {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
   overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .tab-btn {

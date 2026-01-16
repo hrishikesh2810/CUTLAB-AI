@@ -20,12 +20,26 @@ const api = axios.create({
 
 // Project APIs
 export const getProjects = async (): Promise<ProjectsResponse> => {
+    // Current main.py returns { status: "success", projects: [...] }
     const response = await api.get<ProjectsResponse>('/projects');
     return response.data;
 };
 
 export const getProject = async (projectId: string): Promise<ProjectResponse> => {
-    const response = await api.get<ProjectResponse>(`/project/${projectId}`);
+    // New endpoint is /projects/{id}
+    const response = await api.get<ProjectResponse>(`/projects/${projectId}`);
+    return response.data;
+};
+
+export const createProject = async (name: string, videoId?: string): Promise<ProjectResponse> => {
+    const response = await api.post<ProjectResponse>('/projects', { name, video_id: videoId });
+    return response.data;
+};
+
+export const updateProjectState = async (projectId: string, state: any): Promise<ProjectResponse> => {
+    const response = await api.put<ProjectResponse>(`/projects/${projectId}`, {
+        editor_state: state
+    });
     return response.data;
 };
 
@@ -185,6 +199,15 @@ export const exportTimeline = async (
     const response = await api.get(`/export-timeline/${projectId}?${params.toString()}`, {
         responseType: 'blob',
     });
+    return response.data;
+};
+
+export const analyzeContent = async (data: {
+    captions: any[];
+    timeline: any[];
+    video_duration: number;
+}): Promise<any> => {
+    const response = await api.post('/ai/content/analyze', data);
     return response.data;
 };
 
