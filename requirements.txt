@@ -14,3 +14,4 @@ av
 scikit-image
 openai-whisper
 formatted-strings
+mediapipe
