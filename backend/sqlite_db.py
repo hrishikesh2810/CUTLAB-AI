@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import os
 
-DB_PATH = "sqlite:///./storage/metadata.db"
+DB_PATH = "sqlite:///../storage/metadata.db"
 
 engine = create_engine(DB_PATH, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -69,7 +69,7 @@ class ProjectTimeline(Base):
 
 def init_db():
     # Create parent directory if it doesn't exist
-    os.makedirs("storage", exist_ok=True)
+    os.makedirs("../storage", exist_ok=True)
     Base.metadata.create_all(bind=engine)
 
 def get_db():

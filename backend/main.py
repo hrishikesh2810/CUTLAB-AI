@@ -7,10 +7,9 @@ import os
 import sys
 from typing import Optional, List
 
-# Add parent directory to path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from storage import db
+
+import sqlite_db as db
 from video_utils import metadata
 from ai_engine import scene_detection
 from ai_engine import cut_suggester
@@ -42,11 +41,11 @@ app.add_middleware(
 
 # Initialize DB
 db.init_db()
-os.makedirs("storage/videos", exist_ok=True)
+os.makedirs("../storage/videos", exist_ok=True)
 
 def get_video_path(project_id: str) -> str:
     """Helper to find video file path for a project."""
-    video_dir = "storage/videos"
+    video_dir = "../storage/videos"
     for f in os.listdir(video_dir):
         if f.startswith(project_id):
             return os.path.join(video_dir, f)
@@ -233,7 +232,7 @@ async def upload_video(file: UploadFile = File(...), db_session: Session = Depen
         project_id = metadata.generate_project_id()
         file_extension = os.path.splitext(file.filename)[1]
         safe_filename = f"{project_id}{file_extension}"
-        file_path = f"storage/videos/{safe_filename}"
+        file_path = f"../storage/videos/{safe_filename}"
 
         # Save file
         with open(file_path, "wb") as buffer:

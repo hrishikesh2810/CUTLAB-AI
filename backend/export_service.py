@@ -21,9 +21,9 @@ router = APIRouter(prefix="/export", tags=["Export"])
 export_tasks: Dict[str, Dict[str, Any]] = {}
 
 # Ensure export directories exist
-OUTPUT_DIR = "storage/exports"
-REPORTS_DIR = "storage/reports"
-DATA_DIR = "storage/data"
+OUTPUT_DIR = "../storage/exports"
+REPORTS_DIR = "../storage/reports"
+DATA_DIR = "../storage/data"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -42,7 +42,7 @@ class StatusResponse(BaseModel):
 def get_video_path(project_id: str) -> str:
     """Helper to find video file path for a project."""
     # This mirrors the logic in main.py
-    video_dir = "storage/videos"
+    video_dir = "../storage/videos"
     if not os.path.exists(video_dir):
         return None
     for f in os.listdir(video_dir):

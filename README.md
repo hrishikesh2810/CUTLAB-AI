@@ -1,113 +1,81 @@
-# CUTLAB AI - Next-Gen Video Editor
+# CUTLAB AI - Next-Gen AI Video Editor
 
-🎬 **AI-powered video editing assistant** with audio-aware smart cut suggestions, scene detection, and a professional timeline editor.
-(Project developed as part of an academic initiative associated with IIT Ropar)
+CUTLAB AI is an advanced, AI-powered video editing platform designed to automate tedious editing tasks. It features intelligent scene detection, smart human analysis (face tracking & motion scoring), and automatic cut suggestions.
 
----
+![Project Status](https://img.shields.io/badge/status-active-success.svg)
+![Python](https://img.shields.io/badge/backend-python-blue.svg)
+![TypeScript](https://img.shields.io/badge/frontend-typescript-blue.svg)
 
-## 🚀 Quick Start
+## 📂 Project Structure
+
+The project is organized into three main components:
+
+- **`backend/`**: A FastAPI-based server that handles video processing, AI analysis, and project management.
+  - **`ai_engine/`**: Core logic for scene detection and cut suggestions.
+  - **`video_utils/`**: Utilities for metadata extraction and timeline management.
+  - **`smart_human.py`**: MediaPipe-based computer vision for face and motion analysis.
+- **`frontend-ts/`**: A modern React (Vite + TypeScript) application providing the video editing interface.
+- **`storage/`**: The local data store for uploaded videos, generated databases (`metadata.db`), and export artifacts. **Note**: This folder interacts with the backend but stores user data.
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.10+ with pip
-- Node.js 20+ with npm
-- FFmpeg (for video processing)
 
-### 1. Start the Backend (FastAPI)
+- **Python 3.8+**
+- **Node.js 16+** & **npm**
+- **FFmpeg** (Must be installed and available in your system PATH)
 
-```bash
-# From project root
-cd backend
-pip install -r ../requirements.txt
-uvicorn main:app --reload
-```
+### 1. Backend Setup
 
-Backend runs at: **http://127.0.0.1:8000**
+1.  Navigate to the project root.
+2.  Create and activate a virtual environment (optional but recommended):
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  Run the backend server:
+    ```bash
+    cd backend
+    uvicorn main:app --reload --port 8000
+    ```
+    The API will be available at `http://localhost:8000`.
 
-### 2. Start the Frontend (React)
+### 2. Frontend Setup
 
-```bash
-# From project root
-cd frontend-ts
-npm install
-npm run dev
-```
+1.  Open a new terminal and navigate to the frontend directory:
+    ```bash
+    cd frontend-ts
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+    The application will launch at `http://localhost:5173`.
 
-Frontend runs at: **http://localhost:5173**
+## 🧠 Key Features
 
----
+-   **Scene Detection**: Automatically segments raw video into logical clips.
+-   **Smart Analysis**: Uses Computer Vision to detect faces and calculate motion intensity.
+-   **Auto-Suggestions**: Recommends cuts based on content analysis (e.g., removing static scenes).
+-   **Timeline Editor**: A drag-and-drop interface for refining edits.
+-   **Export**: Renders the final video with applied cuts and effects using FFmpeg.
 
-## 🏗️ Project Structure
+## 📄 Documentation
 
-```
-CUTLAB AI 2/
-├── ai_engine/          # AI analysis (scene detection, cut suggestions)
-├── backend/            # FastAPI REST API
-├── frontend-ts/        # React + TypeScript frontend (NEW!)
-├── frontend/           # Legacy Streamlit app
-├── video_utils/        # Video processing utilities
-├── storage/            # Videos, timelines, database
-└── docs/               # Documentation
-```
+For a deep dive into the system design, AI models, and evaluation metrics, please refer to the **[CutLab_AI_Video_Editing_System.ipynb](CutLab_AI_Video_Editing_System.ipynb)** notebook in the root directory.
 
-## ✨ Features
+## 🤝 Contributing
 
-### 📤 Upload
-- Drag & drop video upload
-- Automatic metadata extraction
-- Video preview
-
-### 🔎 Analysis
-- AI-powered scene detection
-- Scene timeline visualization
-- Duration bar charts
-
-### ✂️ Smart Suggestions
-- Audio-aware cut suggestions
-- Motion, silence, face detection
-- Accept/reject workflow
-
-### 📦 Export
-- JSON timeline export
-- XML (FCP) export
-- Non-destructive editing
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Backend | FastAPI, SQLAlchemy, SQLite |
-| AI Engine | OpenCV, Librosa, PySceneDetect |
-| Frontend | React 19, TypeScript, Vite |
-| Styling | CSS (custom dark theme) |
-| Icons | Lucide React |
-
----
-
-## 📡 API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/projects` | GET | List all projects |
-| `/upload-video` | POST | Upload video file |
-| `/analyze-scenes/{id}` | POST | Detect scenes |
-| `/suggest-cuts/{id}` | POST | Generate suggestions |
-| `/workspace/{id}/timeline` | GET/POST | Timeline operations |
-| `/export-timeline/{id}` | GET | Export timeline |
-
----
-
-## 🎨 Frontend Screenshots
-
-The React frontend features:
-- 🌙 Premium dark theme with gradients
-- 📊 Interactive charts and visualizations
-- 🎬 Visual timeline with zoom
-- ⚡ Real-time API integration
-
----
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
+1.  Fork the repository.
+2.  Create a feature branch (`git checkout -b feature/amazing-feature`).
+3.  Commit your changes.
+4.  Push to the branch.
+5.  Open a Pull Request.
