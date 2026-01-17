@@ -1,0 +1,8 @@
+[project]
+name = "cutlab-ai"
+version = "0.1.0"
+description = "CUTLAB AI backend"
+requires-python = ">=3.9"
+
+[project.scripts]
+app = "app:app"

@@ -29,7 +29,7 @@ function SceneItem({ scene, maxDuration }: { scene: Scene; maxDuration: number }
                     <div className="progress-fill" style={{ width: `${percentage}%` }} />
                 </div>
             </div>
-            <div className="scene-duration">{duration.toFixed(3)}s</div>
+            <div className="scene-duration">{duration?.toFixed(3) || '0.000'}s</div>
         </div>
     );
 }
@@ -64,7 +64,7 @@ export function AnalysisPage() {
     const handleAnalyze = async () => {
         try {
             await analyzeScenes();
-        } catch (err) {
+        } catch {
             // Error handled in context
         }
     };
@@ -174,7 +174,7 @@ export function AnalysisPage() {
                                             <td>{formatTime(scene.start_time)}</td>
                                             <td>{formatTime(scene.end_time)}</td>
                                             <td style={{ color: 'var(--accent-secondary)' }}>
-                                                {(scene.end_time - scene.start_time).toFixed(3)}s
+                                                {(scene.end_time - scene.start_time)?.toFixed(3) || '0.000'}s
                                             </td>
                                         </tr>
                                     ))}

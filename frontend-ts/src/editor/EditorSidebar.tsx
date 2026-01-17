@@ -70,12 +70,13 @@ export function EditorSidebar({
     onRemoveTextOverlay,
     width,
 }: EditorSidebarProps) {
-    const [activeTab, setActiveTab] = useState<Tab>('aiContent');
+    const [activeTab, setActiveTab] = useState<Tab>('media');
     const [availableFonts, setAvailableFonts] = useState<string[]>(DEFAULT_FONTS);
 
     // Fetch fonts from backend
     useEffect(() => {
-        fetch('http://127.0.0.1:8000/fonts')
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        fetch(`${apiUrl}/fonts`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && Array.isArray(data.fonts)) {

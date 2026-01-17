@@ -9,7 +9,7 @@ import type {
     TimelineClip,
 } from '../types';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -20,14 +20,17 @@ const api = axios.create({
 
 // Project APIs
 export const getProjects = async (): Promise<ProjectsResponse> => {
-    // Current main.py returns { status: "success", projects: [...] }
-    const response = await api.get<ProjectsResponse>('/projects');
-    return response.data;
+    // Current main.py returns { status: "success", count: X, projects: [...] }
+    const response = await api.get<any>('/projects');
+    return {
+        status: response.data.status,
+        projects: response.data.projects || []
+    } as ProjectsResponse;
 };
 
 export const getProject = async (projectId: string): Promise<ProjectResponse> => {
-    // New endpoint is /projects/{id}
-    const response = await api.get<ProjectResponse>(`/projects/${projectId}`);
+    // Legacy main.py endpoint is /project/{id} (note: singular project)
+    const response = await api.get<ProjectResponse>(`/project/${projectId}`);
     return response.data;
 };
 

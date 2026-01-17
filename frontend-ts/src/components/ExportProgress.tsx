@@ -90,7 +90,7 @@ export const ExportProgress: React.FC<ExportProgressProps> = ({
 
                     {downloadUrl && (
                         <a
-                            href={`http://127.0.0.1:8000${downloadUrl}`}
+                            href={`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}${downloadUrl}`}
                             className="download-btn"
                             download
                             target="_blank"

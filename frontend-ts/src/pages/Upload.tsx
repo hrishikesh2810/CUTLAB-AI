@@ -20,6 +20,12 @@ export function UploadPage() {
         setDragOver(false);
     }, []);
 
+    const handleFileSelect = useCallback((file: File) => {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setError(null);
+    }, []);
+
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setDragOver(false);
@@ -29,13 +35,7 @@ export function UploadPage() {
         } else {
             setError('Please upload a valid video file (MP4, MOV, AVI)');
         }
-    }, []);
-
-    const handleFileSelect = (file: File) => {
-        setSelectedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setError(null);
-    };
+    }, [handleFileSelect]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -67,7 +67,7 @@ export function UploadPage() {
                 setPreviewUrl(null);
                 setUploadProgress(0);
             }, 1000);
-        } catch (err) {
+        } catch {
             setError('Failed to upload video. Please make sure the backend is running.');
             setUploadProgress(0);
         }
@@ -180,15 +180,15 @@ export function UploadPage() {
                     <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-md)' }}>
                         <div className="stat-item">
                             <span className="stat-label">Duration</span>
-                            <span className="stat-value">{state.metadata.duration.toFixed(1)}s</span>
+                            <span className="stat-value">{state.metadata.duration?.toFixed(1) || '0.0'}s</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">Resolution</span>
-                            <span className="stat-value">{state.metadata.width}x{state.metadata.height}</span>
+                            <span className="stat-value">{state.metadata.width || 0}x{state.metadata.height || 0}</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">FPS</span>
-                            <span className="stat-value">{state.metadata.fps.toFixed(1)}</span>
+                            <span className="stat-value">{state.metadata.fps?.toFixed(1) || '0.0'}</span>
                         </div>
                         <div className="stat-item">
                             <span className="stat-label">Audio</span>

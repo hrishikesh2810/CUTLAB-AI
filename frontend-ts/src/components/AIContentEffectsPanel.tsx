@@ -1,5 +1,5 @@
 
-import { Sparkles, Scissors, Zap, Type, Quote, Loader2 } from 'lucide-react';
+import { Sparkles, Scissors, Zap, Quote, Loader2 } from 'lucide-react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import type { AIContentEffectsState, AIContentAnalysis } from '../editor/types';
 import './AIContentEffectsPanel.css';

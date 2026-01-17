@@ -135,11 +135,20 @@ export interface TimelineResponse {
     timeline: Timeline;
 }
 
-// UI State Types
 export interface SequenceSettings {
     width: number;
     height: number;
     fps: number;
 }
 
-export type TabType = 'upload' | 'analysis' | 'suggestions' | 'editor' | 'export';
+// Batch Job Types
+export interface BatchJob {
+    id: string; // File name or random ID
+    name: string;
+    status: 'pending' | 'uploading' | 'analyzing' | 'completed' | 'failed';
+    progress: number;
+    error?: string;
+    projectId?: string;
+}
+
+export type TabType = 'dashboard' | 'upload' | 'analysis' | 'suggestions' | 'editor' | 'export' | 'batch';

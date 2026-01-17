@@ -8,6 +8,7 @@ import type {
     Timeline,
     SequenceSettings,
     TabType,
+    BatchJob,
 } from '../types';
 import * as api from '../services/api';
 
@@ -34,6 +35,9 @@ interface ProjectState {
     // Selection state
     selectedClipId: string | null;
     acceptedSuggestions: Set<number>;
+
+    // Batch state
+    batchJobs: BatchJob[];
 }
 
 // Actions
@@ -50,6 +54,9 @@ type ProjectAction =
     | { type: 'SELECT_CLIP'; payload: string | null }
     | { type: 'TOGGLE_SUGGESTION'; payload: number }
     | { type: 'SET_ALL_SUGGESTIONS'; payload: boolean }
+    | { type: 'SET_BATCH_JOBS'; payload: BatchJob[] }
+    | { type: 'UPDATE_BATCH_JOB'; payload: { id: string; updates: Partial<BatchJob> } }
+    | { type: 'REMOVE_BATCH_JOB'; payload: string }
     | { type: 'CLEAR_PROJECT' };
 
 const initialState: ProjectState = {
@@ -59,12 +66,13 @@ const initialState: ProjectState = {
     suggestions: null,
     timeline: null,
     projects: [],
-    activeTab: 'upload',
+    activeTab: 'dashboard',
     isLoading: false,
     error: null,
     sequence: { width: 1920, height: 1080, fps: 30 },
     selectedClipId: null,
     acceptedSuggestions: new Set(),
+    batchJobs: [],
 };
 
 function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
@@ -113,10 +121,25 @@ function projectReducer(state: ProjectState, action: ProjectAction): ProjectStat
                 return { ...state, acceptedSuggestions: new Set(state.suggestions.map(s => s.scene_id)) };
             }
             return { ...state, acceptedSuggestions: new Set() };
+        case 'SET_BATCH_JOBS':
+            return { ...state, batchJobs: action.payload };
+        case 'UPDATE_BATCH_JOB':
+            return {
+                ...state,
+                batchJobs: state.batchJobs.map(job =>
+                    job.id === action.payload.id ? { ...job, ...action.payload.updates } : job
+                )
+            };
+        case 'REMOVE_BATCH_JOB':
+            return {
+                ...state,
+                batchJobs: state.batchJobs.filter(job => job.id !== action.payload)
+            };
         case 'CLEAR_PROJECT':
             return {
                 ...initialState,
                 projects: state.projects,
+                batchJobs: state.batchJobs,
             };
         default:
             return state;
@@ -133,8 +156,10 @@ interface ProjectContextType {
     uploadVideo: (file: File) => Promise<void>;
     analyzeScenes: () => Promise<void>;
     generateSuggestions: () => Promise<void>;
-    loadTimeline: () => Promise<void>;
     refreshTimeline: () => Promise<void>;
+    runBatchProcess: (files: File[]) => Promise<void>;
+    clearBatchJobs: () => void;
+    removeBatchJob: (id: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | null>(null);
@@ -200,7 +225,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             } catch {
                 // Timeline might not exist yet
             }
-        } catch (error) {
+        } catch {
             dispatch({ type: 'SET_ERROR', payload: 'Failed to load project' });
         } finally {
             dispatch({ type: 'SET_LOADING', payload: false });
@@ -312,8 +337,57 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                 uploadVideo,
                 analyzeScenes,
                 generateSuggestions,
-                loadTimeline,
                 refreshTimeline,
+                runBatchProcess: async (files: File[]) => {
+                    // Initialize jobs
+                    const newJobs: BatchJob[] = files.map(file => ({
+                        id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name: file.name,
+                        status: 'pending',
+                        progress: 0
+                    }));
+
+                    dispatch({ type: 'SET_BATCH_JOBS', payload: [...state.batchJobs, ...newJobs] });
+                    dispatch({ type: 'SET_ACTIVE_TAB', payload: 'batch' });
+
+                    // Process each file
+                    for (const job of newJobs) {
+                        const file = files.find(f => f.name === job.name);
+                        if (!file) continue;
+
+                        try {
+                            // 1. Upload
+                            dispatch({ type: 'UPDATE_BATCH_JOB', payload: { id: job.id, updates: { status: 'uploading', progress: 10 } } });
+                            const uploadData = await api.uploadVideo(file);
+                            const projectId = uploadData.project_id;
+
+                            // 2. Analyze Scenes
+                            dispatch({ type: 'UPDATE_BATCH_JOB', payload: { id: job.id, updates: { status: 'analyzing', progress: 40, projectId } } });
+                            await api.analyzeScenes(projectId);
+
+                            // 3. Generate Suggestions
+                            dispatch({ type: 'UPDATE_BATCH_JOB', payload: { id: job.id, updates: { progress: 70 } } });
+                            await api.suggestCuts(projectId);
+
+                            // 4. Complete
+                            dispatch({ type: 'UPDATE_BATCH_JOB', payload: { id: job.id, updates: { status: 'completed', progress: 100 } } });
+                        } catch (error: any) {
+                            console.error(`Batch job failed for ${job.name}:`, error);
+                            dispatch({
+                                type: 'UPDATE_BATCH_JOB',
+                                payload: {
+                                    id: job.id,
+                                    updates: { status: 'failed', error: error.message || 'Processing failed' }
+                                }
+                            });
+                        }
+                    }
+
+                    // Refresh project list after all jobs are done
+                    await loadProjects();
+                },
+                clearBatchJobs: () => dispatch({ type: 'SET_BATCH_JOBS', payload: [] }),
+                removeBatchJob: (id: string) => dispatch({ type: 'REMOVE_BATCH_JOB', payload: id }),
             }}
         >
             {children}

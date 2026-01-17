@@ -38,7 +38,7 @@ const SuggestionCard = memo(function SuggestionCard({
                     </span>
                 </div>
                 <span className="suggestion-badge badge-confidence">
-                    {(suggestion.confidence * 100).toFixed(0)}% Confidence
+                    {(suggestion.confidence * 100)?.toFixed(0) || '0'}% Confidence
                 </span>
             </div>
 
@@ -53,7 +53,7 @@ const SuggestionCard = memo(function SuggestionCard({
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Duration</span>
-                    <span className="stat-value">{metrics.duration.toFixed(2)}s</span>
+                    <span className="stat-value">{metrics.duration?.toFixed(2) || '0.00'}s</span>
                 </div>
             </div>
 
@@ -64,19 +64,19 @@ const SuggestionCard = memo(function SuggestionCard({
                 <div className="suggestion-metrics">
                     <div className="metric-item">
                         <div className="metric-icon">🏃</div>
-                        <div className="metric-value">{(metrics.motion_intensity * 100).toFixed(0)}%</div>
+                        <div className="metric-value">{(metrics.motion_intensity * 100)?.toFixed(0) || '0'}%</div>
                         <div className="metric-label">Motion</div>
                     </div>
                     <div className="metric-item">
                         <div className="metric-icon">
                             {metrics.silence_level > 0.5 ? <VolumeX size={16} /> : <Volume2 size={16} />}
                         </div>
-                        <div className="metric-value">{(metrics.silence_level * 100).toFixed(0)}%</div>
+                        <div className="metric-value">{(metrics.silence_level * 100)?.toFixed(0) || '0'}%</div>
                         <div className="metric-label">Silence</div>
                     </div>
                     <div className="metric-item">
                         <div className="metric-icon"><Music size={16} /></div>
-                        <div className="metric-value">{(metrics.audio_energy * 100).toFixed(0)}%</div>
+                        <div className="metric-value">{(metrics.audio_energy * 100)?.toFixed(0) || '0'}%</div>
                         <div className="metric-label">Energy</div>
                     </div>
                     <div className="metric-item">
@@ -86,7 +86,7 @@ const SuggestionCard = memo(function SuggestionCard({
                     </div>
                     <div className="metric-item">
                         <div className="metric-icon"><Activity size={16} /></div>
-                        <div className="metric-value">{(metrics.repetitiveness * 100).toFixed(0)}%</div>
+                        <div className="metric-value">{(metrics.repetitiveness * 100)?.toFixed(0) || '0'}%</div>
                         <div className="metric-label">Repetitive</div>
                     </div>
                 </div>
@@ -132,7 +132,7 @@ export function SuggestionsPage() {
     const handleGenerate = useCallback(async () => {
         try {
             await generateSuggestions();
-        } catch (err) {
+        } catch {
             // Error handled in context
         }
     }, [generateSuggestions]);
@@ -283,13 +283,13 @@ export function SuggestionsPage() {
                             <div className="stat-item">
                                 <span className="stat-label">Total Cut Time</span>
                                 <span className="stat-value" style={{ color: 'var(--accent-primary)' }}>
-                                    {stats.cutTime.toFixed(1)}s
+                                    {stats.cutTime?.toFixed(1) || '0.0'}s
                                 </span>
                             </div>
                             <div className="stat-item">
                                 <span className="stat-label">Avg Confidence</span>
                                 <span className="stat-value" style={{ color: 'var(--accent-secondary)' }}>
-                                    {stats.avgConfidence.toFixed(0)}%
+                                    {stats.avgConfidence?.toFixed(0) || '0'}%
                                 </span>
                             </div>
                         </div>

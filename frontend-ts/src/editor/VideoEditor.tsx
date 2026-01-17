@@ -29,13 +29,18 @@ import { useSmartHumanEffects } from '../context/SmartHumanEffectsContext';
 import { AlertCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import './VideoEditor.css';
-import type { CaptionSettings } from './types';
+
+import { useProject } from '../store/ProjectContext';
+import * as api from './api';
 
 interface VideoEditorProps {
     projectId?: string | null;
 }
 
-export function VideoEditor({ projectId }: VideoEditorProps) {
+export function VideoEditor({ projectId: propProjectId }: VideoEditorProps) {
+    const { state: projectState, dispatch: projectDispatch, loadProjects } = useProject();
+    const projectId = propProjectId || projectState.projectId;
+
     const {
         state,
         setVideoRef,
@@ -75,7 +80,33 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
     // Handle file import
     const handleImport = async (file: File) => {
         try {
-            await importVideo(file);
+            const newVideo = await importVideo(file);
+            if (newVideo) {
+                projectDispatch({
+                    type: 'SET_PROJECT',
+                    payload: {
+                        projectId: newVideo.video_id,
+                        metadata: {
+                            filename: newVideo.filename,
+                            duration: newVideo.duration,
+                            fps: newVideo.fps,
+                            width: newVideo.width,
+                            height: newVideo.height,
+                            has_audio: true // Default
+                        }
+                    }
+                });
+                localStorage.setItem('cutlab_active_project', newVideo.video_id);
+                // Load timeline for the newly created project (empty at first)
+                try {
+                    const timelineData = await api.getTimeline(newVideo.video_id);
+                    projectDispatch({ type: 'SET_TIMELINE', payload: timelineData.timeline });
+                } catch {
+                    console.warn('No timeline yet for new project');
+                }
+                // Refresh project list to include the new project
+                await loadProjects();
+            }
         } catch (error) {
             console.error('Import failed:', error);
         }
@@ -84,7 +115,18 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
     // Handle scene detection
     const handleDetectScenes = async () => {
         try {
-            await detectScenes('vlog'); // Using vlog preset as default
+            const result = await detectScenes('vlog');
+            if (result && result.scenes) {
+                // Adapt Scene format {start, end} to {start_time, end_time} for dashboard
+                const dashboardScenes = result.scenes.map((s, i) => ({
+                    scene_id: i + 1,
+                    start_time: s.start,
+                    end_time: s.end,
+                    start_frame: Math.floor(s.start * (state.video?.fps || 30)),
+                    end_frame: Math.floor(s.end * (state.video?.fps || 30))
+                }));
+                projectDispatch({ type: 'SET_SCENES', payload: dashboardScenes });
+            }
         } catch (error) {
             console.error('Scene detection failed:', error);
         }
@@ -120,8 +162,9 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
             }
         };
 
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
         try {
-            const res = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+            const res = await fetch(`${apiUrl}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -136,16 +179,17 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
                 setExportDownloadUrl(data.download_url);
                 setExportProgress(100);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             setExportStatus('failed');
-            setExportError(err.message);
+            setExportError(err instanceof Error ? err.message : 'Export failed');
         }
     };
 
     const pollExportStatus = async (exportId: string) => {
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(`http://127.0.0.1:8000/export/status/${exportId}`);
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+                const res = await fetch(`${apiUrl}/export/status/${exportId}`);
                 const data = await res.json();
 
                 setExportProgress(data.progress);
@@ -159,7 +203,7 @@ export function VideoEditor({ projectId }: VideoEditorProps) {
                     setExportStatus('failed');
                     setExportError(data.error);
                 }
-            } catch (err) {
+            } catch {
                 clearInterval(interval);
                 setExportStatus('failed');
             }

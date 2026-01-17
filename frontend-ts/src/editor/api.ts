@@ -6,10 +6,10 @@
  */
 
 // Editor API (new simplified backend)
-const EDITOR_API = 'http://127.0.0.1:8001';
+const EDITOR_API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Main CUTLAB API (dashboard backend)
-const MAIN_API = 'http://127.0.0.1:8000';
+const MAIN_API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 export interface UploadResponse {
     video_id: string;
@@ -93,7 +93,17 @@ export async function uploadVideo(file: File): Promise<UploadResponse> {
         throw new Error(error.detail || 'Upload failed');
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Adapt main backend response to editor expected format
+    return {
+        video_id: data.project_id,
+        filename: data.metadata?.filename || data.filename,
+        duration: data.metadata?.duration || 0,
+        fps: data.metadata?.fps || 0,
+        width: data.metadata?.width || 0,
+        height: data.metadata?.height || 0
+    };
 }
 
 /**
@@ -103,20 +113,38 @@ export async function detectScenes(
     videoId: string,
     preset?: string
 ): Promise<SceneDetectResponse> {
-    const params = new URLSearchParams();
-    if (preset) {
-        params.append('preset', preset);
-    }
-
-    const url = `${EDITOR_API}/scene-detect/${videoId}?${params.toString()}`;
-    const response = await fetch(url);
+    const url = `${EDITOR_API}/analyze-scenes/${videoId}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
 
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || 'Scene detection failed');
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Adapt backend response to frontend format if necessary
+    // Backend returns { status, project_id, scene_count, scenes: [{start_time, end_time, ...}] }
+    // Frontend expects { video_id, scene_count, scenes: [{start, end}] }
+    return {
+        video_id: data.project_id || videoId,
+        scene_count: data.scene_count || data.scenes.length,
+        scenes: data.scenes.map((s: any) => ({
+            start: s.start_time,
+            end: s.end_time
+        })),
+        config: data.config || {
+            threshold: 30,
+            min_scene_length: 1,
+            shake_threshold: 0,
+            preset: preset || 'vlog'
+        }
+    };
 }
 
 /**
@@ -136,8 +164,11 @@ export async function getTimeline(videoId: string): Promise<TimelineResponse> {
 /**
  * Get video file URL from editor backend.
  */
-export function getVideoUrl(videoId: string, extension: string = 'mp4'): string {
-    return `${EDITOR_API}/uploads/${videoId}.${extension}`;
+export function getVideoUrl(videoId: string): string {
+    // The editor backend serves video files via the /video/{videoId} endpoint.
+    // Previously this pointed to /uploads/{videoId}.{ext} which does not exist.
+    // Use the main API base (same as EDITOR_API) to construct the correct URL.
+    return `${EDITOR_API}/video/${videoId}`;
 }
 
 // =========================================================================

@@ -198,7 +198,7 @@ export function useVideoEditor(projectId?: string | null) {
                         console.log('📂 Loading latest project:', latestProject.project_id);
                         await loadDashboardProject(latestProject.project_id);
                     }
-                } catch (error) {
+                } catch {
                     console.log('No dashboard projects found');
                 }
             };
@@ -214,9 +214,6 @@ export function useVideoEditor(projectId?: string | null) {
         try {
             const response = await api.uploadVideo(file);
 
-            // Get file extension from original filename
-            const ext = file.name.split('.').pop() || 'mp4';
-
             const video: VideoFile = {
                 video_id: response.video_id,
                 filename: response.filename,
@@ -224,7 +221,7 @@ export function useVideoEditor(projectId?: string | null) {
                 fps: response.fps,
                 width: response.width,
                 height: response.height,
-                url: api.getVideoUrl(response.video_id, ext),
+                url: api.getVideoUrl(response.video_id),
             };
 
             updateState({

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -156,9 +156,9 @@ async def get_project(project_id: str, db_session: Session = Depends(db.get_db))
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/video/{project_id}")
-async def stream_video(project_id: str):
-    """Stream video file for the editor."""
-    from fastapi.responses import FileResponse
+async def stream_video(project_id: str, request: Request):
+    """Stream video file for the editor with range request support."""
+    from fastapi.responses import StreamingResponse, FileResponse
     
     video_path = get_video_path(project_id)
     
@@ -176,11 +176,56 @@ async def stream_video(project_id: str):
     }
     media_type = media_types.get(ext, 'video/mp4')
     
-    return FileResponse(
-        video_path,
-        media_type=media_type,
-        filename=os.path.basename(video_path)
-    )
+    # Get file size
+    file_size = os.path.getsize(video_path)
+    
+    # Check for range header
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header
+        range_match = range_header.replace("bytes=", "").split("-")
+        start = int(range_match[0]) if range_match[0] else 0
+        end = int(range_match[1]) if len(range_match) > 1 and range_match[1] else file_size - 1
+        
+        # Ensure valid range
+        start = max(0, start)
+        end = min(end, file_size - 1)
+        content_length = end - start + 1
+        
+        # Stream the requested range
+        def iterfile():
+            with open(video_path, "rb") as f:
+                f.seek(start)
+                remaining = content_length
+                while remaining > 0:
+                    chunk_size = min(8192, remaining)
+                    data = f.read(chunk_size)
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+        
+        headers = {
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(content_length),
+            "Content-Type": media_type,
+        }
+        
+        return StreamingResponse(
+            iterfile(),
+            status_code=206,
+            headers=headers,
+            media_type=media_type
+        )
+    else:
+        # No range request, return full file
+        return FileResponse(
+            video_path,
+            media_type=media_type,
+            headers={"Accept-Ranges": "bytes"}
+        )
 
 @app.post("/upload-video")
 async def upload_video(file: UploadFile = File(...), db_session: Session = Depends(db.get_db)):

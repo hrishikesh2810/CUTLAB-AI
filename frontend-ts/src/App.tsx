@@ -1,22 +1,26 @@
 import {
-    Upload, Search, Scissors, Package,
-    Film, Clock, Layers, Volume2, Edit
+    Upload, Search, Scissors, Edit, Package, Volume2, Film, Clock, Layers
 } from 'lucide-react';
-import { ProjectProvider, useProject } from './store/ProjectContext';
+import { useProject } from './store/ProjectContext';
 import { UploadPage } from './pages/Upload';
 import { AnalysisPage } from './pages/Analysis';
 import { SuggestionsPage } from './pages/Suggestions';
 import { ExportPage } from './pages/Export';
+import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
+import { BatchProcessingView } from './pages/BatchProcessingView';
 import { VideoEditor } from './editor/VideoEditor';
 import type { TabType } from './types';
 import './index.css';
 
+
 const TABS: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: <Layers size={18} /> },
     { id: 'upload', label: 'Upload', icon: <Upload size={18} /> },
     { id: 'analysis', label: 'Analysis', icon: <Search size={18} /> },
     { id: 'suggestions', label: 'Suggestions', icon: <Scissors size={18} /> },
     { id: 'editor', label: 'Editor', icon: <Edit size={18} /> },
     { id: 'export', label: 'Export', icon: <Package size={18} /> },
+    { id: 'batch', label: 'Batch', icon: <Layers size={18} /> },
 ];
 
 function AppContent() {
@@ -35,7 +39,20 @@ function AppContent() {
     };
 
     const renderPage = () => {
+        // If no project is selected, show a placeholder for non‑upload/dashboard/batch tabs
+        if (!projectId && !['upload', 'dashboard', 'batch'].includes(activeTab)) {
+            return (
+                <div className="no-project-placeholder" style={{ padding: '2rem', textAlign: 'center' }}>
+                    <p>Please upload a video to access {activeTab} features.</p>
+                    <button onClick={() => setActiveTab('upload')} className="tab-btn" style={{ marginTop: '1rem' }}>
+                        Go to Upload
+                    </button>
+                </div>
+            );
+        }
         switch (activeTab) {
+            case 'dashboard':
+                return <AnalyticsDashboard />;
             case 'upload':
                 return <UploadPage />;
             case 'analysis':
@@ -46,11 +63,12 @@ function AppContent() {
                 return <VideoEditor projectId={projectId} />;
             case 'export':
                 return <ExportPage />;
+            case 'batch':
+                return <BatchProcessingView />;
             default:
-                return <UploadPage />;
+                return <AnalyticsDashboard />;
         }
     };
-
     return (
         <div className="app">
             {/* Header */}
@@ -78,8 +96,8 @@ function AppContent() {
                                 >
                                     <option value="">-- Select Project --</option>
                                     {projects.map((project) => (
-                                        <option key={project.project_id} value={project.project_id}>
-                                            {project.filename.slice(0, 20)}... ({project.project_id.slice(0, 8)})
+                                        <option key={project.id || project.project_id} value={project.id || project.project_id}>
+                                            {(project.name || project.filename)?.slice(0, 20) ?? ''}... ({(project.id || project.project_id)?.slice(0, 8)})
                                         </option>
                                     ))}
                                 </select>
@@ -106,15 +124,15 @@ function AppContent() {
                             <div className="stats-grid">
                                 <div className="stat-item">
                                     <span className="stat-label"><Clock size={12} /> Duration</span>
-                                    <span className="stat-value">{metadata.duration.toFixed(1)}s</span>
+                                    <span className="stat-value">{metadata.duration?.toFixed(1) || '0.0'}s</span>
                                 </div>
                                 <div className="stat-item">
                                     <span className="stat-label"><Film size={12} /> Resolution</span>
-                                    <span className="stat-value">{metadata.width}x{metadata.height}</span>
+                                    <span className="stat-value">{metadata.width || 0}x{metadata.height || 0}</span>
                                 </div>
                                 <div className="stat-item">
                                     <span className="stat-label"><Layers size={12} /> FPS</span>
-                                    <span className="stat-value">{metadata.fps.toFixed(0)}</span>
+                                    <span className="stat-value">{metadata.fps?.toFixed(0) || '0'}</span>
                                 </div>
                                 <div className="stat-item">
                                     <span className="stat-label"><Volume2 size={12} /> Audio</span>
@@ -181,9 +199,7 @@ function AppContent() {
 
 function App() {
     return (
-        <ProjectProvider>
-            <AppContent />
-        </ProjectProvider>
+        <AppContent />
     );
 }
 
