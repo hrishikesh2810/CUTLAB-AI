@@ -5,7 +5,7 @@
  * Implements "Video Overlay Layer" strategy for ratio-aware caption positioning.
  */
 
-import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, Square, SkipBack, SkipForward } from 'lucide-react';
 import { useRef, useEffect, useCallback, useMemo, useState, useLayoutEffect } from 'react';
 import type { VideoFile, VideoFilters, Caption, CaptionSettings, AIContentAnalysis, AIContentEffectsState, TextOverlay } from './types';
 import { getFilterString } from './filterUtils';
@@ -26,6 +26,7 @@ interface VideoPlayerProps {
     onUpdateTextOverlay: (id: string, updates: Partial<TextOverlay>) => void;
     onTimeUpdate: (time: number) => void;
     onTogglePlay: () => void;
+    onStop: () => void;
     onSeek: (time: number) => void;
     setVideoRef: (ref: HTMLVideoElement | null) => void;
 }
@@ -53,6 +54,7 @@ export function VideoPlayer({
     onUpdateTextOverlay,
     onTimeUpdate,
     onTogglePlay,
+    onStop,
     onSeek,
     setVideoRef,
 }: VideoPlayerProps) {
@@ -110,7 +112,7 @@ export function VideoPlayer({
         return () => window.removeEventListener('resize', updateVideoRect);
     }, [updateVideoRect, video?.video_id]); // Re-calc when video changes
 
-    // Draggable Logic - Centralized
+    // Draggable Logic - Centralized with boundary awareness
     const draggingRef = useRef<{ id: string, type: 'caption' | 'text', startX: number, startY: number, initialPos: { x: number, y: number } } | null>(null);
 
     const handleDragStart = (e: React.MouseEvent, id: string, type: 'caption' | 'text', currentX: number, currentY: number) => {
@@ -131,13 +133,15 @@ export function VideoPlayer({
 
             const { startX, startY, initialPos, id, type } = draggingRef.current;
 
-            // Calculate delta in normalized coordinates
-            // deltaX pixels / videoRect.width = deltaX normalized
-            const deltaX = (e.clientX - startX) / videoRect.width * 100; // *100 because positions are 0-100
+            // Calculate delta in normalized coordinates (0-100%)
+            const deltaX = (e.clientX - startX) / videoRect.width * 100;
             const deltaY = (e.clientY - startY) / videoRect.height * 100;
 
-            const newX = Math.max(0, Math.min(100, initialPos.x + deltaX));
-            const newY = Math.max(0, Math.min(100, initialPos.y + deltaY));
+            // Clamp with padding to keep text inside video bounds
+            // Use 5% and 95% to prevent text from touching edges
+            const PADDING = 5;
+            const newX = Math.max(PADDING, Math.min(100 - PADDING, initialPos.x + deltaX));
+            const newY = Math.max(PADDING, Math.min(100 - PADDING, initialPos.y + deltaY));
 
             if (type === 'caption') {
                 onUpdateCaption(parseInt(id), { position: { x: newX, y: newY } });
@@ -159,17 +163,17 @@ export function VideoPlayer({
     }, [videoRect, onUpdateCaption, onUpdateTextOverlay]);
 
 
-    // Effect Styles from Filters
+    // Effect Styles from Filters - ensure video fits container completely
     const effectStyles = useMemo(() => {
         const filterList: string[] = [];
         if (filters && Object.keys(filters).length > 0) {
             filterList.push(getFilterString(filters));
         }
         return {
-            filter: filterList.join(" "),
+            filter: filterList.length > 0 ? filterList.join(" ") : 'none',
             width: '100%',
             height: '100%',
-            objectFit: 'contain' as const
+            objectFit: 'contain' as const,
         };
     }, [filters]);
 
@@ -183,28 +187,79 @@ export function VideoPlayer({
         return textOverlays.filter(t => currentTime >= t.start && currentTime <= t.end);
     }, [textOverlays, currentTime]);
 
-    // Format handling for older captions without explicit position
-    const getCaptionStyle = (capStyle?: any) => {
+    // Calculate scaled font size based on video dimensions
+    // This ensures captions look proportional regardless of viewport size
+    const getScaledFontSize = useCallback((baseFontSize: number) => {
+        if (videoRect.height === 0) return baseFontSize;
+        // Scale relative to a reference height of 720px
+        const scaleFactor = videoRect.height / 720;
+        return Math.max(12, Math.round(baseFontSize * scaleFactor));
+    }, [videoRect.height]);
+
+    // Format handling for captions with proper styling
+    const getCaptionStyle = useCallback((capStyle?: any): React.CSSProperties => {
         const defaults = captionSettings?.style || {
             fontFamily: 'Inter',
             fontSize: 24,
-            color: 'white',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            fontWeight: 'normal',
+            color: '#ffffff',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            fontWeight: 'bold',
             fontStyle: 'normal'
         };
-        return { ...defaults, ...capStyle };
-    };
+        const merged = { ...defaults, ...capStyle };
 
-    const getCaptionPosition = (capPos?: any) => {
-        return capPos || captionSettings?.position || { x: 50, y: 90 };
-    };
+        return {
+            fontFamily: merged.fontFamily,
+            fontSize: `${getScaledFontSize(merged.fontSize)}px`,
+            color: merged.color,
+            backgroundColor: merged.backgroundColor,
+            fontWeight: merged.fontWeight as any,
+            fontStyle: merged.fontStyle as any,
+            // Professional caption styling
+            display: 'inline-block',
+            padding: '6px 16px',
+            borderRadius: '4px',
+            textAlign: 'center' as const,
+            whiteSpace: 'pre-wrap' as const,
+            maxWidth: '90%',
+            lineHeight: 1.4,
+            textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+            letterSpacing: '0.02em'
+        };
+    }, [captionSettings?.style, getScaledFontSize]);
+
+    // Get text overlay style with scaling
+    const getTextOverlayStyle = useCallback((style?: any): React.CSSProperties => {
+        const fontSize = getScaledFontSize(style?.fontSize || 24);
+        return {
+            fontFamily: style?.fontFamily || 'Inter',
+            fontSize: `${fontSize}px`,
+            color: style?.color || 'white',
+            backgroundColor: style?.backgroundColor || 'transparent',
+            fontWeight: (style?.fontWeight as any) || 'normal',
+            fontStyle: (style?.fontStyle as any) || 'normal',
+            display: 'inline-block',
+            padding: '6px 12px',
+            borderRadius: '4px',
+            textAlign: 'center' as const,
+            whiteSpace: 'pre-wrap' as const,
+            maxWidth: '90%',
+            lineHeight: 1.4,
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        };
+    }, [getScaledFontSize]);
+
+    // Default position for auto-captions (center-bottom)
+    const getCaptionPosition = useCallback((capPos?: any) => {
+        // Default: center horizontally, near bottom (85% from top)
+        return capPos || captionSettings?.position || { x: 50, y: 85 };
+    }, [captionSettings?.position]);
 
     // Video refs setup
     useEffect(() => {
         if (videoElementRef.current) setVideoRef(videoElementRef.current);
         return () => setVideoRef(null);
-    }, [setVideoRef]);
+    }, [setVideoRef, video?.url]);
 
     // Play/Pause Sync
     useEffect(() => {
@@ -215,22 +270,42 @@ export function VideoPlayer({
     }, [isPlaying, video?.url]);
 
     const handleSeek = (time: number) => {
-        if (videoElementRef.current) videoElementRef.current.currentTime = time;
+        if (videoElementRef.current) {
+            videoElementRef.current.currentTime = time;
+            onTimeUpdate(time);
+        }
         onSeek(time);
+    };
+
+    const handleStop = () => {
+        if (videoElementRef.current) {
+            videoElementRef.current.pause();
+            videoElementRef.current.currentTime = 0;
+            onTimeUpdate(0);
+        }
+        onStop();
     };
 
     const skip = (seconds: number) => {
         if (video && videoElementRef.current) {
             const newTime = Math.max(0, Math.min(video.duration, currentTime + seconds));
             videoElementRef.current.currentTime = newTime;
+            onTimeUpdate(newTime);
             onSeek(newTime);
         }
     };
 
+    // Handle video ended
+    const handleEnded = () => {
+        if (videoElementRef.current) {
+            onTimeUpdate(videoElementRef.current.duration);
+        }
+    };
+
     return (
-        <div className="video-player flex flex-col h-full bg-black/20 rounded-lg overflow-hidden">
-            {/* Main Video Area */}
-            <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-black" ref={containerRef}>
+        <div className="video-player">
+            {/* Main Video Area - acts as professional editor viewport */}
+            <div className="video-viewport" ref={containerRef}>
                 {video?.url ? (
                     <>
                         <video
@@ -238,45 +313,64 @@ export function VideoPlayer({
                             src={video.url}
                             style={effectStyles}
                             onTimeUpdate={() => onTimeUpdate(videoElementRef.current?.currentTime || 0)}
-                            onLoadedMetadata={updateVideoRect}
-                            onResize={updateVideoRect}
+                            onLoadedMetadata={() => {
+                                updateVideoRect();
+                                if (videoElementRef.current) {
+                                    setVideoRef(videoElementRef.current);
+                                }
+                            }}
+                            onEnded={handleEnded}
                             playsInline
-                            className="max-w-full max-h-full"
+                            preload="auto"
                         />
 
-                        {/* OVERLAY LAYER - Matches Video Rect Exactly */}
+                        {/* OVERLAY LAYER - Matches Video Rect Exactly, Clips Content */}
                         <div
-                            className="absolute pointer-events-none" // Helper layer
+                            className="video-caption-overlay"
                             style={{
+                                position: 'absolute',
                                 width: videoRect.width,
                                 height: videoRect.height,
                                 left: videoRect.left,
                                 top: videoRect.top,
-                                // border: '1px solid rgba(255,255,0,0.3)' // Debug boundary
+                                overflow: 'hidden', // CRITICAL: Clip any content outside video bounds
+                                pointerEvents: 'none'
                             }}
                         >
-                            <div className="relative w-full h-full pointer-events-auto"> {/* Interactive Area */}
-
+                            {/* Interactive container - full size of video */}
+                            <div
+                                className="caption-interactive-area"
+                                style={{
+                                    position: 'relative',
+                                    width: '100%',
+                                    height: '100%',
+                                    pointerEvents: 'auto'
+                                }}
+                            >
                                 {/* 1. Active Auto Caption */}
                                 {activeCaptionIndex !== -1 && (
                                     <div
-                                        className="absolute cursor-move select-none p-2 rounded hover:ring-1 ring-white/50"
+                                        className="caption-draggable"
                                         style={{
+                                            position: 'absolute',
                                             left: `${getCaptionPosition(captions[activeCaptionIndex].position).x}%`,
                                             top: `${getCaptionPosition(captions[activeCaptionIndex].position).y}%`,
                                             transform: 'translate(-50%, -50%)',
-                                            zIndex: 50
+                                            zIndex: 50,
+                                            cursor: 'move',
+                                            userSelect: 'none',
+                                            display: 'flex',
+                                            justifyContent: 'center'
                                         }}
-                                        onMouseDown={(e) => handleDragStart(e, activeCaptionIndex.toString(), 'caption', getCaptionPosition(captions[activeCaptionIndex].position).x, getCaptionPosition(captions[activeCaptionIndex].position).y)}
+                                        onMouseDown={(e) => handleDragStart(
+                                            e,
+                                            activeCaptionIndex.toString(),
+                                            'caption',
+                                            getCaptionPosition(captions[activeCaptionIndex].position).x,
+                                            getCaptionPosition(captions[activeCaptionIndex].position).y
+                                        )}
                                     >
-                                        <span style={{
-                                            ...getCaptionStyle(captions[activeCaptionIndex].style),
-                                            display: 'inline-block',
-                                            padding: '4px 12px',
-                                            borderRadius: '4px',
-                                            textAlign: 'center',
-                                            whiteSpace: 'pre-wrap'
-                                        }}>
+                                        <span style={getCaptionStyle(captions[activeCaptionIndex].style)}>
                                             {captions[activeCaptionIndex].text}
                                         </span>
                                     </div>
@@ -286,33 +380,31 @@ export function VideoPlayer({
                                 {activeTextOverlays.map(overlay => (
                                     <div
                                         key={overlay.id}
-                                        className="absolute cursor-move select-none p-2 rounded hover:ring-1 ring-blue-500/50"
+                                        className="text-overlay-draggable"
                                         style={{
+                                            position: 'absolute',
                                             left: `${overlay.position?.x ?? 50}%`,
                                             top: `${overlay.position?.y ?? 50}%`,
                                             transform: 'translate(-50%, -50%)',
-                                            zIndex: 60
+                                            zIndex: 60,
+                                            cursor: 'move',
+                                            userSelect: 'none',
+                                            display: 'flex',
+                                            justifyContent: 'center'
                                         }}
-                                        onMouseDown={(e) => handleDragStart(e, overlay.id, 'text', overlay.position?.x ?? 50, overlay.position?.y ?? 50)}
+                                        onMouseDown={(e) => handleDragStart(
+                                            e,
+                                            overlay.id,
+                                            'text',
+                                            overlay.position?.x ?? 50,
+                                            overlay.position?.y ?? 50
+                                        )}
                                     >
-                                        <span style={{
-                                            fontFamily: overlay.style?.fontFamily || 'Inter',
-                                            fontSize: `${overlay.style?.fontSize || 24}px`,
-                                            color: overlay.style?.color || 'white',
-                                            backgroundColor: overlay.style?.backgroundColor || 'transparent',
-                                            fontWeight: overlay.style?.fontWeight as any || 'normal',
-                                            fontStyle: overlay.style?.fontStyle as any || 'normal',
-                                            display: 'inline-block',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            textAlign: 'center',
-                                            whiteSpace: 'pre-wrap'
-                                        }}>
+                                        <span style={getTextOverlayStyle(overlay.style)}>
                                             {overlay.text}
                                         </span>
                                     </div>
                                 ))}
-
                             </div>
                         </div>
                     </>
@@ -324,40 +416,72 @@ export function VideoPlayer({
                 )}
             </div>
 
-            {/* Controls */}
-            <div className="h-12 bg-black/40 backdrop-blur flex items-center px-4 gap-4 border-t border-white/10 shrink-0">
-                {/* Skip Back */}
-                <button onClick={() => skip(-5)} className="hover:text-blue-400">
-                    <SkipBack size={20} />
-                </button>
+            {/* Transport Controls */}
+            <div className="video-controls">
+                <div className="transport-controls">
+                    {/* Skip Back 5s */}
+                    <button
+                        className="control-btn"
+                        onClick={() => skip(-5)}
+                        title="Skip back 5 seconds"
+                    >
+                        <SkipBack size={18} />
+                    </button>
 
-                {/* Play/Pause */}
-                <button onClick={onTogglePlay} className="hover:text-blue-400">
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </button>
+                    {/* Stop Button */}
+                    <button
+                        className="control-btn"
+                        onClick={handleStop}
+                        title="Stop and reset to beginning"
+                    >
+                        <Square size={18} />
+                    </button>
 
-                {/* Skip Forward */}
-                <button onClick={() => skip(5)} className="hover:text-blue-400">
-                    <SkipForward size={20} />
-                </button>
+                    {/* Play/Pause Button */}
+                    <button
+                        className="control-btn control-btn-primary"
+                        onClick={onTogglePlay}
+                        title={isPlaying ? 'Pause' : 'Play'}
+                    >
+                        {isPlaying ? <Pause size={22} /> : <Play size={22} />}
+                    </button>
 
-                {/* Progress */}
-                <div className="flex-1 relative h-8 flex items-center group cursor-pointer"
+                    {/* Skip Forward 5s */}
+                    <button
+                        className="control-btn"
+                        onClick={() => skip(5)}
+                        title="Skip forward 5 seconds"
+                    >
+                        <SkipForward size={18} />
+                    </button>
+                </div>
+
+                {/* Timeline Seek Bar */}
+                <div
+                    className="seek-bar-container"
                     onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const pct = (e.clientX - rect.left) / rect.width;
-                        handleSeek(pct * (video?.duration || 1));
-                    }}>
-                    <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500" style={{ width: `${(currentTime / (video?.duration || 1)) * 100}%` }} />
+                        handleSeek(Math.max(0, pct * (video?.duration || 1)));
+                    }}
+                >
+                    <div className="seek-bar-track">
+                        <div
+                            className="seek-bar-progress"
+                            style={{ width: `${(currentTime / (video?.duration || 1)) * 100}%` }}
+                        />
                     </div>
-                    <div className="absolute h-3 w-3 bg-white rounded-full shadow transition-opacity opacity-0 group-hover:opacity-100"
-                        style={{ left: `${(currentTime / (video?.duration || 1)) * 100}%`, transform: 'translateX(-50%)' }} />
+                    <div
+                        className="seek-bar-thumb"
+                        style={{ left: `${(currentTime / (video?.duration || 1)) * 100}%` }}
+                    />
                 </div>
 
-                {/* Time */}
-                <div className="text-xs font-mono text-gray-400">
-                    {formatTimecode(currentTime)} / {formatTimecode(video?.duration || 0)}
+                {/* Timecode Display */}
+                <div className="timecode-display">
+                    <span className="timecode-current">{formatTimecode(currentTime)}</span>
+                    <span className="timecode-separator">/</span>
+                    <span className="timecode-duration">{formatTimecode(video?.duration || 0)}</span>
                 </div>
             </div>
         </div>

@@ -48,6 +48,7 @@ export function VideoEditor({ projectId: propProjectId }: VideoEditorProps) {
         detectScenes,
         seekTo,
         togglePlay,
+        stop,
         onTimeUpdate,
         selectClip,
         setZoom,
@@ -272,6 +273,7 @@ export function VideoEditor({ projectId: propProjectId }: VideoEditorProps) {
                     onUpdateTextOverlay={updateTextOverlay}
                     onTimeUpdate={onTimeUpdate}
                     onTogglePlay={togglePlay}
+                    onStop={stop}
                     onSeek={seekTo}
                     setVideoRef={setVideoRef}
                 />

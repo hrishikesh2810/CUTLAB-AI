@@ -411,101 +411,252 @@
 }
 
 /* ==========================================================================
-   VIDEO PLAYER
+   VIDEO PLAYER - Professional Editor Viewport
    ========================================================================== */
 
 .video-player {
     flex: 1;
+    min-height: 0;
+    /* Critical: prevents flex child from overflowing parent */
     display: flex;
     flex-direction: column;
-    background: black;
+    background: #000;
     position: relative;
-    /* Box shadow removed here as it's now on the block class */
     overflow: hidden;
 }
 
-.video-container {
+/* Video Viewport - the black canvas area */
+.video-viewport {
     flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #000;
+    position: relative;
     overflow: hidden;
 }
 
-.video-container video {
-    max-width: 100%;
-    max-height: 100%;
+/* Video element - object-fit: contain ensures entire video is visible */
+.video-viewport video {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    /* Always show entire video, letterbox/pillarbox as needed */
+    display: block;
 }
 
-.player-controls {
-    padding: 16px 24px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+/* Caption and overlay container */
+.video-overlay-layer {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    opacity: 0;
-    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.video-overlay-layer .interactive-area {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+}
+
+/* No video placeholder */
+.video-viewport .no-video-placeholder {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-}
-
-.video-player:hover .player-controls {
-    opacity: 1;
-}
-
-.timecode {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.9rem;
-    color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-.timecode .current {
-    color: var(--accent);
-}
-
-.transport {
-    display: flex;
-    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
     gap: 12px;
 }
 
-.transport-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
+.video-viewport .no-video-placeholder svg {
+    opacity: 0.4;
+}
+
+/* ==========================================================================
+   VIDEO CONTROLS - Transport Bar
+   ========================================================================== */
+
+.video-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+/* Transport buttons group */
+.transport-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Control button base */
+.control-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
     cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
-.transport-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
     transform: scale(1.05);
 }
 
-.transport-btn.play-btn {
-    background: var(--text-primary);
-    color: black;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    padding: 0;
+.control-btn:active {
+    transform: scale(0.95);
 }
 
-.transport-btn.play-btn:hover {
-    transform: scale(1.1);
-    background: white;
+/* Primary play/pause button */
+.control-btn-primary {
+    width: 44px;
+    height: 44px;
+    background: var(--text-primary);
+    color: #000;
+    border-radius: 50%;
+}
+
+.control-btn-primary:hover {
+    background: #fff;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    transform: scale(1.08);
+}
+
+/* Seek bar container */
+.seek-bar-container {
+    flex: 1;
+    position: relative;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+/* Seek bar track background */
+.seek-bar-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+/* Seek bar progress fill */
+.seek-bar-progress {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.05s linear;
+}
+
+/* Seek bar thumb */
+.seek-bar-thumb {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.seek-bar-container:hover .seek-bar-thumb {
+    opacity: 1;
+}
+
+.seek-bar-container:hover .seek-bar-track {
+    height: 6px;
+}
+
+/* Timecode display */
+.timecode-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font-feature-settings: "tnum";
+}
+
+.timecode-current {
+    color: var(--accent);
+}
+
+.timecode-separator {
+    opacity: 0.5;
+}
+
+.timecode-duration {
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   CAPTION OVERLAY - Ratio-Aware Text Layer
+   ========================================================================== */
+
+/* The overlay container that matches video dimensions exactly */
+.video-caption-overlay {
+    /* Positioned absolutely over video with exact dimensions */
+    /* overflow:hidden clips any text outside video bounds */
+    z-index: 40;
+}
+
+/* Interactive area for dragging */
+.caption-interactive-area {
+    /* Full size of video frame */
+    box-sizing: border-box;
+}
+
+/* Base styles for draggable captions and text */
+.caption-draggable,
+.text-overlay-draggable {
+    transition: box-shadow 0.15s ease, transform 0.1s ease;
+    border-radius: 4px;
+}
+
+/* Hover state for draggable elements */
+.caption-draggable:hover,
+.text-overlay-draggable:hover {
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.5),
+        0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Active drag state */
+.caption-draggable:active,
+.text-overlay-draggable:active {
+    transform: translate(-50%, -50%) scale(1.02);
+    box-shadow:
+        0 0 0 3px var(--accent),
+        0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Caption text styling defaults */
+.caption-draggable span,
+.text-overlay-draggable span {
+    /* Text rendering optimization */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* ==========================================================================

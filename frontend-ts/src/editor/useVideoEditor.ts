@@ -35,13 +35,13 @@ export function useVideoEditor(projectId?: string | null) {
         captionSettings: {
             style: {
                 fontFamily: 'Inter',
-                fontSize: 24,
+                fontSize: 28,
                 color: '#ffffff',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                fontWeight: 'normal',
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                fontWeight: 'bold',
                 fontStyle: 'normal',
             },
-            position: { x: 50, y: 90 },
+            position: { x: 50, y: 85 }, // Center-bottom for professional look
         },
         aiContentAnalysis: null,
         aiContentEffects: {
@@ -313,6 +313,15 @@ export function useVideoEditor(projectId?: string | null) {
         }
     }, [state.isPlaying, updateState]);
 
+    // Stop (pause and reset to beginning)
+    const stop = useCallback(() => {
+        if (videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.currentTime = 0;
+            updateState({ isPlaying: false, currentTime: 0 });
+        }
+    }, [updateState]);
+
     // Update current time (called from video timeupdate event)
     const onTimeUpdate = useCallback((time: number) => {
         updateState({ currentTime: time });
@@ -416,6 +425,7 @@ export function useVideoEditor(projectId?: string | null) {
         detectScenes,
         seekTo,
         togglePlay,
+        stop,
         onTimeUpdate,
         selectClip,
         setZoom,
